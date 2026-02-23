@@ -21,7 +21,7 @@ class Database:
         firstname TEXT NOT NULL,
         patronymic TEXT,
         email VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(64) NOT NULL);""")
+        password VARCHAR(255) NOT NULL);""")
         self.conn.commit()
 
     def create_users_departments(self):
@@ -30,13 +30,40 @@ class Database:
         department_id INT NOT NULL REFERENCES departments (department_id) ON DELETE CASCADE ON UPDATE CASCADE);""")
         self.conn.commit()
 
-db = Database(
-    dbname="rls",
-    user="postgres",
-    password="postgres",
-    host="localhost"
-)
+    def insert_departments(self):
+        self.cur.execute("""INSERT INTO departments(department_name) VALUES
+        ('Отдел IT'),
+        ('Отдел менеджеров'),
+        ('Отдел HR'),
+        ('Отдел библиомед'),
+        ('Отдел администрации');""")
+        self.conn.commit()
 
-db.create_departments()
-db.create_users()
-db.create_users_departments()
+    def insert_users(self, lastname, firstname, patronymic, email, password):
+        self.cur.execute("""INSERT INTO users(lastname, firstname, patronymic, email, password) VALUES
+        (%s, %s, %s, %s, %s);""",(lastname, firstname, patronymic, email, password))
+        self.conn.commit()
+
+    def insert_users_departments(self, user_id, department_id):
+        self.cur.execute("""INSERT INTO users_departments(user_id, department_id) VALUES
+        (%s, %s);""", (user_id, department_id))
+        self.conn.commit()
+
+    def select_departments(self):
+        self.cur.execute("""SELECT department_name FROM departments;""")
+        return [row[0] for row in self.cur.fetchall()]
+
+    def select_department_id(self, department_name):
+        self.cur.execute("""SELECT department_id FROM departments WHERE department_name = %s;""", (department_name,))
+        return self.cur.fetchone()[0]
+
+    def select_user_id(self, email):
+        self.cur.execute("""SELECT user_id FROM users WHERE email = %s;""", (email,))
+        return self.cur.fetchone()[0]
+
+    def check_credentials(self, email, password):
+        self.cur.execute("""
+                SELECT * FROM users 
+                WHERE email = %s AND password = %s;
+            """, (email, password))
+        return self.cur.fetchone() is not None
