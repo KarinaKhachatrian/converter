@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Qt, Slot, Signal
 from PySide6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QLineEdit, QComboBox, QPushButton
 
 from src.db.database import Database
@@ -12,7 +12,9 @@ from src.auth.load_fonts import load_font
 from src.auth.auth_methods import AuthMethods
 
 class LoginWindow(QWidget):
-    def __init__(self, root):
+    login_successful = Signal()
+
+    def __init__(self, root, register_window=None):
         super().__init__()
         self.setWindowTitle("Система для работы с ОХЛП")
 
@@ -22,6 +24,8 @@ class LoginWindow(QWidget):
             password="postgres",
             host="localhost"
         )
+
+        self.register_window = register_window
 
         self.auth_methods = AuthMethods()
 
@@ -50,8 +54,8 @@ class LoginWindow(QWidget):
         self.password_field.setFont(label_font)
         self.password_field.setEchoMode(QLineEdit.EchoMode.Password)
 
-        self.auth_btn = QPushButton('Войти')
-        self.auth_btn.setFont(btn_font)
+        self.login_btn = QPushButton('Войти')
+        self.login_btn.setFont(btn_font)
 
         self.register_lbl = QLabel('Ещё нет аккаунта?')
         self.register_lbl.setFont(label_font)
@@ -74,8 +78,7 @@ class LoginWindow(QWidget):
 
         self.layout.addStretch()
 
-        self.layout.addWidget(self.auth_btn)
-        self.auth_btn.clicked.connect(self.login)
+        self.layout.addWidget(self.login_btn)
 
         self.layout.addWidget(self.register_lbl)
         self.layout.addWidget(self.register_btn)
@@ -92,13 +95,14 @@ class LoginWindow(QWidget):
                 self.auth_methods.len_field_check(password)):
 
                 if self.db.check_credentials(email, hash_password(password)):
-                    self.auth_methods.show_message('Успех')
+                    self.auth_methods.show_message('Аутентификация прошла успешно!')
+                    self.login_successful.emit()
                 else:
                     self.auth_methods.show_warning('Неверный логин или пароль')
             else:
-                self.auth_methods.show_warning("Введённые данные не могут быть короче 1 символа")
+                self.auth_methods.show_warning('Введённые данные не могут быть короче 1 символа')
         else:
-            self.auth_methods.show_warning("Заполните все поля")
+            self.auth_methods.show_warning('Заполните все поля')
 
 
 # if __name__ == "__main__":

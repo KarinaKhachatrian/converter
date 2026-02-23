@@ -30,6 +30,20 @@ class Database:
         department_id INT NOT NULL REFERENCES departments (department_id) ON DELETE CASCADE ON UPDATE CASCADE);""")
         self.conn.commit()
 
+    def create_second_level_content(self):
+        self.cur.execute("""CREATE TABLE IF NOT EXISTS second_level_content(
+        content_id SERIAL PRIMARY KEY,
+        second_header TEXT NOT NULL,
+        content TEXT);""")
+        self.conn.commit()
+
+    def create_third_level_content(self):
+        self.cur.execute("""CREATE TABLE IF NOT EXISTS third_level_content(
+        content_id SERIAL PRIMARY KEY,
+        third_header TEXT NOT NULL,
+        content TEXT);""")
+        self.conn.commit()
+
     def insert_departments(self):
         self.cur.execute("""INSERT INTO departments(department_name) VALUES
         ('Отдел IT'),

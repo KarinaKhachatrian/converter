@@ -1,11 +1,8 @@
-import sys
-from pathlib import Path
-
-from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QLineEdit, QComboBox, QPushButton
+from PySide6.QtCore import Qt, Slot, Signal
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QLineEdit, QComboBox, QPushButton
 
 from src.db.database import Database
-from src.db.select_queries import departments
+from src.db.exec_select import departments
 
 from src.auth.hash_password import hash_password
 from src.auth.load_fonts import load_font
@@ -13,7 +10,9 @@ from src.auth.load_fonts import load_font
 from src.auth.auth_methods import AuthMethods
 
 class RegisterWindow(QWidget):
-    def __init__(self, root):
+    registration_successful = Signal()
+
+    def __init__(self, root, login_window=None):
         super().__init__()
         self.setWindowTitle("Система для работы с ОХЛП")
 
@@ -23,6 +22,9 @@ class RegisterWindow(QWidget):
             password="postgres",
             host="localhost"
         )
+
+        self.login_window = login_window
+
         self.auth_methods = AuthMethods()
 
         self.greeting_lbl = QLabel('Добро пожаловать!\nЗарегистрируйтесь для работы с системой')
@@ -117,7 +119,6 @@ class RegisterWindow(QWidget):
         self.layout.addStretch()
 
         self.layout.addWidget(self.register_btn)
-        self.register_btn.clicked.connect(self.register)
 
         self.layout.addWidget(self.login_lbl)
         self.layout.addWidget(self.login_btn)
@@ -155,6 +156,8 @@ class RegisterWindow(QWidget):
                         self.db.insert_users_departments(user_id, department_id)
 
                         self.auth_methods.show_message("Регистрация прошла успешно!")
+
+                        self.registration_successful.emit()
                     else:
                         self.auth_methods.show_warning("Пароли не совпадают")
                 else:

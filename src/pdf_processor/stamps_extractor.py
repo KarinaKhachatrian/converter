@@ -22,6 +22,7 @@ class StampsExtractor(Processor):
 
         if weights_path is None:
             self.weights_path = Path(self.base_path) / Path('train') / Path('weights') / Path('best.pt')
+            print(self.weights_path)
         else:
             w_path = Path(weights_path)
             if w_path.is_absolute():
