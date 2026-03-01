@@ -30,18 +30,34 @@ class Database:
         department_id INT NOT NULL REFERENCES departments (department_id) ON DELETE CASCADE ON UPDATE CASCADE);""")
         self.conn.commit()
 
-    def create_second_level_content(self):
-        self.cur.execute("""CREATE TABLE IF NOT EXISTS second_level_content(
-        content_id SERIAL PRIMARY KEY,
+    def create_second_level_contents(self):
+        self.cur.execute("""CREATE TABLE IF NOT EXISTS second_level_contents(
+        second_content_id SERIAL PRIMARY KEY,
         second_header TEXT NOT NULL,
         content TEXT);""")
         self.conn.commit()
 
-    def create_third_level_content(self):
-        self.cur.execute("""CREATE TABLE IF NOT EXISTS third_level_content(
-        content_id SERIAL PRIMARY KEY,
+    def create_third_level_contents(self):
+        self.cur.execute("""CREATE TABLE IF NOT EXISTS third_level_contents(
+        third_content_id SERIAL PRIMARY KEY,
         third_header TEXT NOT NULL,
         content TEXT);""")
+        self.conn.commit()
+
+    def create_users_second_level_content(self):
+        self.cur.execute("""CREATE TABLE IF NOT EXISTS users_second_level_content(
+        user_second_level_id SERIAL PRIMARY KEY,
+        user_id INT NOT NULL REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+        second_content_id INT NOT NULL REFERENCES second_level_contents (second_content_id) ON DELETE CASCADE ON UPDATE CASCADE
+        );""")
+        self.conn.commit()
+
+    def create_users_third_level_content(self):
+        self.cur.execute("""CREATE TABLE IF NOT EXISTS users_third_level_content(
+        user_third_level_id SERIAL PRIMARY KEY,
+        user_id INT NOT NULL REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+        third_content_id INT NOT NULL REFERENCES third_level_contents (third_content_id) ON DELETE CASCADE ON UPDATE CASCADE
+        );""")
         self.conn.commit()
 
     def insert_departments(self):
@@ -81,3 +97,17 @@ class Database:
                 WHERE email = %s AND password = %s;
             """, (email, password))
         return self.cur.fetchone() is not None
+
+    def insert_second_level_content(self, second_header, content):
+        self.cur.execute("""INSERT INTO second_level_contents(
+                            second_header, 
+                            content) 
+                            VALUES (%s, %s);""", (second_header, content))
+        self.conn.commit()
+
+    def insert_third_level_content(self, second_header, content):
+        self.cur.execute("""INSERT INTO third_level_contents(
+                            third_header, 
+                            content) 
+                            VALUES (%s, %s);""", (second_header, content))
+        self.conn.commit()

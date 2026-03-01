@@ -54,19 +54,19 @@ class AccountWindow(QWidget):
         self.layout.addWidget(self.stamps_btn)
         self.layout.addWidget(self.db_btn)
 
-if __name__ == "__main__":
-    app = QApplication([])
-
-    current_file = Path(__file__).resolve()
-    root = current_file.parents[1]
-
-    widget = AccountWindow(root)
-
-    with open(root / r"styles/light.qss", "r", encoding="utf-8") as f:
-        style_sheet = f.read()
-        widget.setStyleSheet(style_sheet)
-
-    widget.resize(700, 300)
-    widget.show()
-
-    sys.exit(app.exec())
+# if __name__ == "__main__":
+#     app = QApplication([])
+#
+#     current_file = Path(__file__).resolve()
+#     root = current_file.parents[1]
+#
+#     widget = AccountWindow(root)
+#
+#     with open(root / r"styles/light.qss", "r", encoding="utf-8") as f:
+#         style_sheet = f.read()
+#         widget.setStyleSheet(style_sheet)
+#
+#     widget.resize(700, 300)
+#     widget.show()
+#
+#     sys.exit(app.exec())
