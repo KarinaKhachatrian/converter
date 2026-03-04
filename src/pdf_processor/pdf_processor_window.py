@@ -311,7 +311,7 @@ class ProcessorWindow(QWidget):
     def cancel_processing(self):
         """Отмена обработки"""
         if self.worker and self.worker.isRunning():
-            self.worker.stop()
+            self.worker.stop_worker()
             self.cancel_btn.setEnabled(False)
             self.status_lbl.setText("Отмена обработки...")
             self.status_lbl.setStyleSheet("color: orange;")
@@ -379,7 +379,7 @@ class ProcessorWindow(QWidget):
             )
 
             if reply == QMessageBox.Yes:
-                self.worker.stop()
+                self.worker.stop_worker()
                 self.worker.quit()
                 self.worker.wait()
                 event.accept()

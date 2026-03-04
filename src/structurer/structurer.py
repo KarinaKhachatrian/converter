@@ -2,7 +2,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 
-class DBWorker:
+class Structurer:
     def __init__(self, html_path: Path):
         self.html_path = html_path
 

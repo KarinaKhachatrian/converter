@@ -14,9 +14,11 @@ from PySide6.QtGui import QIcon
 
 from src.auth.load_fonts import load_font
 from src.db.database import Database
-from src.db_work.db_work import DBWorker
+from src.structurer.structurer import Structurer
 
-class Worker(QThread):
+from src.interfaces import Worker, Processor
+
+class DBWorker(Worker):
     progress_updated = Signal(int)
     status_updated = Signal(str)
     file_processed = Signal(str, float)
@@ -24,7 +26,7 @@ class Worker(QThread):
     finished_all = Signal()
 
     def __init__(self, html_dir, login):
-        super().__init__()
+        super().__init__(html_dir, login)
         self.html_dir = html_dir
         self.db = Database(
             dbname="rls",
@@ -35,11 +37,10 @@ class Worker(QThread):
         self.is_running = True
         self.login = login
 
-    def stop(self):
-        """Остановка обработки"""
+    def stop_worker(self):
         self.is_running = False
 
-    def run(self):
+    def start_worker(self):
         try:
             html_files = list(self.html_dir.glob("*.html"))
             total_files = len(html_files)
@@ -61,7 +62,7 @@ class Worker(QThread):
                     start_time = time.time()
 
                     self.status_updated.emit(f"Извлечение полей {html_file_name} (файл {index + 1}/{total_files})")
-                    db_worker = DBWorker(html_file)
+                    db_worker = Structurer(html_file)
 
                     h2_content = db_worker.structure_content('h2')
                     h3_content = db_worker.structure_content('h3')
@@ -88,11 +89,12 @@ class Worker(QThread):
 
                     continue
             self.finished_all.emit()
+
         except Exception as e:
             self.error_occurred.emit("Общая ошибка", traceback.format_exc())
             self.finished_all.emit()
 
-class DBWorkWindow(QWidget):
+class DBWorkWindow(Processor):
     def __init__(self, root, login):
         super().__init__()
         self.login = login
@@ -171,18 +173,18 @@ class DBWorkWindow(QWidget):
 
     @Slot()
     def choose_dir(self):
-        dir_path = QFileDialog.getExistingDirectory(
+        self.dir_path = QFileDialog.getExistingDirectory(
             self,
             "Выберите директорию с HTML-файлами",
             "",
             QFileDialog.ShowDirsOnly
         )
 
-        if dir_path:
-            self.selected_dir = dir_path
-            self.selected_dir_lbl.setText(f"Выбрана директория: {dir_path}")
+        if self.dir_path:
+            self.selected_dir = self.dir_path
+            self.selected_dir_lbl.setText(f"Выбрана директория: {self.dir_path}")
 
-            pdf_files = self.get_html_files(dir_path)
+            pdf_files = self.get_files()
 
             if pdf_files:
                 self.status_lbl.setText(f"Найдено HTML-файлов: {len(pdf_files)}")
@@ -191,10 +193,84 @@ class DBWorkWindow(QWidget):
                 self.status_lbl.setText("В выбранной директории нет HTML-файлов!")
                 self.status_lbl.setStyleSheet("color: red;")
 
-    def get_html_files(self, dir_path):
+    @Slot()
+    def cancel_processing(self):
+        if self.worker and self.worker.isRunning():
+            self.worker.stop_worker()
+            self.cancel_btn.setEnabled(False)
+            self.status_lbl.setText("Отмена обработки...")
+            self.status_lbl.setStyleSheet("color: orange;")
+            self.log_message("Пользователь запросил отмену обработки")
+
+    @Slot(int)
+    def update_progress(self, value):
+        self.progress_bar.setValue(value)
+
+    @Slot(str)
+    def update_status(self, status):
+        self.status_lbl.setText(status)
+        self.current_file_lbl.setText(f"Текущая операция: {status}")
+        self.log_message(status)
+
+    @Slot(str, float)
+    def on_file_processed(self, filename, elapsed_time):
+        time_str = f"{elapsed_time:.2f} сек."
+        if elapsed_time > 60:
+            minutes = int(elapsed_time // 60)
+            seconds = elapsed_time % 60
+            time_str = f"{minutes} мин. {seconds:.2f} сек."
+
+        self.time_lbl.setText(f"Последний файл: {filename} - {time_str}")
+        self.log_message(f"Файл {filename} обработан за {time_str}")
+
+    @Slot(str, str)
+    def on_error(self, filename, error_details):
+        error_message = f"Ошибка при обработке {filename}"
+        self.status_lbl.setText(error_message)
+        self.status_lbl.setStyleSheet("color: red;")
+        self.log_message(f"{error_message}")
+        self.log_message(f"Детали ошибки:\n{error_details}")
+
+    @Slot()
+    def on_processing_finished(self):
+        self.choose_btn.setEnabled(True)
+        self.process_btn.setEnabled(True)
+        self.cancel_btn.setEnabled(False)
+
+        if self.worker and self.worker.isRunning():
+            self.worker.quit()
+            self.worker.wait()
+
+        self.progress_bar.setValue(100)
+        self.status_lbl.setText("Обработка завершена!")
+        self.status_lbl.setStyleSheet("color: green;")
+        self.current_file_lbl.setText("Все файлы обработаны")
+        self.log_message("=== ОБРАБОТКА ЗАВЕРШЕНА ===")
+
+    def close_event(self, event):
+        if self.worker and self.worker.isRunning():
+            reply = QMessageBox.question(
+                self,
+                "Подтверждение",
+                "Обработка еще не завершена. Вы уверены, что хотите выйти?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+
+            if reply == QMessageBox.Yes:
+                self.worker.stop_worker()
+                self.worker.quit()
+                self.worker.wait()
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            event.accept()
+
+    def get_files(self):
         html_files = []
         try:
-            for file in os.listdir(dir_path):
+            for file in os.listdir(self.dir_path):
                 if file.lower().endswith('.html'):
                     html_files.append(file)
         except Exception as e:
@@ -203,7 +279,6 @@ class DBWorkWindow(QWidget):
         return html_files
 
     def log_message(self, message):
-        """Добавление сообщения в лог"""
         timestamp = time.strftime("%H:%M:%S")
         self.log_text.append(f"[{timestamp}] {message}")
 
@@ -238,88 +313,7 @@ class DBWorkWindow(QWidget):
 
         self.log_message("Начало обработки...")
         self.log_message(f"Найдено файлов для обработки: {len(html_files)}")
-        self.worker.start()
-
-    @Slot()
-    def cancel_processing(self):
-        """Отмена обработки"""
-        if self.worker and self.worker.isRunning():
-            self.worker.stop()
-            self.cancel_btn.setEnabled(False)
-            self.status_lbl.setText("Отмена обработки...")
-            self.status_lbl.setStyleSheet("color: orange;")
-            self.log_message("Пользователь запросил отмену обработки")
-
-    @Slot(int)
-    def update_progress(self, value):
-        """Обновление прогресс-бара"""
-        self.progress_bar.setValue(value)
-
-    @Slot(str)
-    def update_status(self, status):
-        """Обновление статуса"""
-        self.status_lbl.setText(status)
-        self.current_file_lbl.setText(f"Текущая операция: {status}")
-        self.log_message(status)
-
-    @Slot(str, float)
-    def on_file_processed(self, filename, elapsed_time):
-        """Обработка успешно завершенного файла"""
-        time_str = f"{elapsed_time:.2f} сек."
-        if elapsed_time > 60:
-            minutes = int(elapsed_time // 60)
-            seconds = elapsed_time % 60
-            time_str = f"{minutes} мин. {seconds:.2f} сек."
-
-        self.time_lbl.setText(f"Последний файл: {filename} - {time_str}")
-        self.log_message(f"Файл {filename} обработан за {time_str}")
-
-    @Slot(str, str)
-    def on_error(self, filename, error_details):
-        """Обработка ошибок"""
-        error_message = f"Ошибка при обработке {filename}"
-        self.status_lbl.setText(error_message)
-        self.status_lbl.setStyleSheet("color: red;")
-        self.log_message(f"{error_message}")
-        self.log_message(f"Детали ошибки:\n{error_details}")
-
-    @Slot()
-    def on_processing_finished(self):
-        """Завершение обработки"""
-        self.choose_btn.setEnabled(True)
-        self.process_btn.setEnabled(True)
-        self.cancel_btn.setEnabled(False)
-
-        if self.worker and self.worker.isRunning():
-            self.worker.quit()
-            self.worker.wait()
-
-        self.progress_bar.setValue(100)
-        self.status_lbl.setText("Обработка завершена!")
-        self.status_lbl.setStyleSheet("color: green;")
-        self.current_file_lbl.setText("Все файлы обработаны")
-        self.log_message("=== ОБРАБОТКА ЗАВЕРШЕНА ===")
-
-    def closeEvent(self, event):
-        """Обработка закрытия окна"""
-        if self.worker and self.worker.isRunning():
-            reply = QMessageBox.question(
-                self,
-                "Подтверждение",
-                "Обработка еще не завершена. Вы уверены, что хотите выйти?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-
-            if reply == QMessageBox.Yes:
-                self.worker.stop()
-                self.worker.quit()
-                self.worker.wait()
-                event.accept()
-            else:
-                event.ignore()
-        else:
-            event.accept()
+        self.worker.start_worker()
 
 # if __name__ == "__main__":
 #     app = QApplication([])
@@ -327,7 +321,7 @@ class DBWorkWindow(QWidget):
 #     current_file = Path(__file__).resolve()
 #     root = current_file.parents[1]
 #
-#     widget = DBWorkWindow(root)
+#     widget = DBWorkWindow(root, "test")
 #
 #     with open(root / r"styles/light.qss", "r", encoding="utf-8") as f:
 #         style_sheet = f.read()

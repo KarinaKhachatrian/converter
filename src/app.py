@@ -9,7 +9,7 @@ from src.account.account_window import AccountWindow
 from src.pdf_processor.pdf_processor_window import ProcessorWindow
 
 from src.window_methods import show_window, switch_window
-from src.db_work.db_work_window import DBWorkWindow
+from src.structurer.structurer_window import DBWorkWindow
 
 
 class Application:
