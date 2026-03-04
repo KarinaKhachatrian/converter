@@ -30,14 +30,14 @@ class AccountWindow(QWidget):
         self.question_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.question_lbl.setFont(label_font)
 
-        self.convert_btn = QPushButton('Конвертировать файлы ОХЛП')
+        self.convert_btn = QPushButton('Конвертация файлов ОХЛП')
         self.convert_btn.setFont(btn_font)
 
-        self.stamps_btn = QPushButton('Проверить работу модели')
-        self.stamps_btn.setFont(btn_font)
-
-        self.db_btn = QPushButton('Посмотреть базу данных')
+        self.db_btn = QPushButton('Работа с базой данных')
         self.db_btn.setFont(btn_font)
+
+        self.stamps_btn = QPushButton('Работа модели обнаружения штампов')
+        self.stamps_btn.setFont(btn_font)
 
         self.layout = QVBoxLayout(self)
 
@@ -51,8 +51,8 @@ class AccountWindow(QWidget):
         self.layout.addStretch()
 
         self.layout.addWidget(self.convert_btn)
-        self.layout.addWidget(self.stamps_btn)
         self.layout.addWidget(self.db_btn)
+        self.layout.addWidget(self.stamps_btn)
 
 # if __name__ == "__main__":
 #     app = QApplication([])

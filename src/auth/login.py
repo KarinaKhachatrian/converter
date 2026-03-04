@@ -104,6 +104,9 @@ class LoginWindow(QWidget):
         else:
             self.auth_methods.show_warning('Заполните все поля')
 
+    def get_email(self) -> str:
+        return self.email_field.text()
+
 
 # if __name__ == "__main__":
 #     app = QApplication([])

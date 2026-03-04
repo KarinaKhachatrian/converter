@@ -34,14 +34,16 @@ class Database:
         self.cur.execute("""CREATE TABLE IF NOT EXISTS second_level_contents(
         second_content_id SERIAL PRIMARY KEY,
         second_header TEXT NOT NULL,
-        content TEXT);""")
+        content TEXT,
+        filename TEXT);""")
         self.conn.commit()
 
     def create_third_level_contents(self):
         self.cur.execute("""CREATE TABLE IF NOT EXISTS third_level_contents(
         third_content_id SERIAL PRIMARY KEY,
         third_header TEXT NOT NULL,
-        content TEXT);""")
+        content TEXT,
+        filename TEXT);""")
         self.conn.commit()
 
     def create_users_second_level_content(self):
@@ -91,6 +93,14 @@ class Database:
         self.cur.execute("""SELECT user_id FROM users WHERE email = %s;""", (email,))
         return self.cur.fetchone()[0]
 
+    def select_second_content_id(self, second_header):
+        self.cur.execute("""SELECT second_content_id FROM second_level_contents WHERE second_header = %s;""", (second_header,))
+        return self.cur.fetchone()[0]
+
+    def select_third_content_id(self, third_header):
+        self.cur.execute("""SELECT third_content_id FROM third_level_contents WHERE third_header = %s;""", (third_header,))
+        return self.cur.fetchone()[0]
+
     def check_credentials(self, email, password):
         self.cur.execute("""
                 SELECT * FROM users 
@@ -98,16 +108,58 @@ class Database:
             """, (email, password))
         return self.cur.fetchone() is not None
 
-    def insert_second_level_content(self, second_header, content):
+    def insert_second_level_content(self, second_header, content, filename):
         self.cur.execute("""INSERT INTO second_level_contents(
                             second_header, 
-                            content) 
-                            VALUES (%s, %s);""", (second_header, content))
+                            content,
+                            filename) 
+                            VALUES (%s, %s, %s);""", (second_header, content, filename))
         self.conn.commit()
 
-    def insert_third_level_content(self, second_header, content):
+    def insert_third_level_content(self, second_header, content, filename):
         self.cur.execute("""INSERT INTO third_level_contents(
                             third_header, 
-                            content) 
-                            VALUES (%s, %s);""", (second_header, content))
+                            content,
+                            filename) 
+                            VALUES (%s, %s, %s);""", (second_header, content, filename))
+        self.conn.commit()
+
+    def insert_users_second_level_content(self, user_id, second_content_id):
+        self.cur.execute("""INSERT INTO users_second_level_content(
+                                user_id,
+                                second_content_id) VALUES (%s, %s);""",
+                         (user_id, second_content_id))
+
+    def insert_users_third_level_content(self, user_id, third_content_id):
+        self.cur.execute("""INSERT INTO users_third_level_content(
+                                user_id,
+                                third_content_id) VALUES (%s, %s);""",
+                         (user_id, third_content_id))
+
+    def drop_departments(self):
+        self.cur.execute("""DROP TABLE IF EXISTS departments CASCADE;""")
+        self.conn.commit()
+
+    def drop_users(self):
+        self.cur.execute("""DROP TABLE IF EXISTS users CASCADE;""")
+        self.conn.commit()
+
+    def drop_users_departments(self):
+        self.cur.execute("""DROP TABLE IF EXISTS users_departments CASCADE;""")
+        self.conn.commit()
+
+    def drop_second_level_contents(self):
+        self.cur.execute("""DROP TABLE IF EXISTS second_level_contents CASCADE;""")
+        self.conn.commit()
+
+    def drop_third_level_contents(self):
+        self.cur.execute("""DROP TABLE IF EXISTS third_level_contents CASCADE;""")
+        self.conn.commit()
+
+    def drop_users_second_level_contents(self):
+        self.cur.execute("""DROP TABLE IF EXISTS users_second_level_content CASCADE;""")
+        self.conn.commit()
+
+    def drop_users_third_level_contents(self):
+        self.cur.execute("""DROP TABLE IF EXISTS users_third_level_content CASCADE;""")
         self.conn.commit()

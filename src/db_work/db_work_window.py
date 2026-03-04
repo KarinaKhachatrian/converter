@@ -1,7 +1,6 @@
-import sys
 import os
+import sys
 from pathlib import Path
-import shutil
 import time
 import traceback
 
@@ -13,18 +12,9 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Signal, QThread, Slot, QSize
 from PySide6.QtGui import QIcon
 
-from src.pdf_processor.pdf_converter import PDFConverter
-from src.pdf_processor.stamps_extractor import StampsExtractor
-from src.pdf_processor.images_converter import ImagesConverter
-from src.pdf_processor.ocr import OCRProcessor
-from src.pdf_processor.document_processor import DocumentProcessor
-from src.pdf_processor.html_converter import HTMLConverter
-from src.pdf_processor.html_processor import HTMLProcessor
-from src.pdf_processor.tables_fixer import TablesFixer
-from src.pdf_processor.wrapper import Wrapper
-
 from src.auth.load_fonts import load_font
-
+from src.db.database import Database
+from src.db_work.db_work import DBWorker
 
 class Worker(QThread):
     progress_updated = Signal(int)
@@ -33,10 +23,17 @@ class Worker(QThread):
     error_occurred = Signal(str, str)
     finished_all = Signal()
 
-    def __init__(self, pdf_dir):
+    def __init__(self, html_dir, login):
         super().__init__()
-        self.pdf_dir = pdf_dir
+        self.html_dir = html_dir
+        self.db = Database(
+            dbname="rls",
+            user="postgres",
+            password="postgres",
+            host="localhost"
+        )
         self.is_running = True
+        self.login = login
 
     def stop(self):
         """Остановка обработки"""
@@ -44,133 +41,79 @@ class Worker(QThread):
 
     def run(self):
         try:
-            pdf_files = list(self.pdf_dir.glob("*.pdf"))
-            total_files = len(pdf_files)
+            html_files = list(self.html_dir.glob("*.html"))
+            total_files = len(html_files)
 
-            for index, pdf_file in enumerate(pdf_files):
+            try:
+                user_id = self.db.select_user_id(self.login)
+            except:
+                self.error_occurred.emit("Ошибка авторизации",
+                                         f"Не удалось найти пользователя {self.login} в базе данных")
+                self.finished_all.emit()
+                return
+
+            for index, html_file in enumerate(html_files):
+                html_file_name = str(html_file.name)
                 if not self.is_running:
                     break
 
                 try:
                     start_time = time.time()
 
-                    images_dir = self.pdf_dir / f'{pdf_file.stem}_images'
-                    processed_images_dir = self.pdf_dir / f'{pdf_file.stem}_processed_images'
-                    processed_pdf_dir = self.pdf_dir / f'{pdf_file.stem}_processed'
-                    docx_dir = self.pdf_dir / 'docx'
-                    certain_html_dir = self.pdf_dir / 'HTML' / pdf_file.stem
+                    self.status_updated.emit(f"Извлечение полей {html_file_name} (файл {index + 1}/{total_files})")
+                    db_worker = DBWorker(html_file)
 
-                    os.makedirs(images_dir, exist_ok=True)
-                    os.makedirs(processed_images_dir, exist_ok=True)
-                    os.makedirs(processed_pdf_dir, exist_ok=True)
-                    os.makedirs(docx_dir, exist_ok=True)
-                    os.makedirs(certain_html_dir, exist_ok=True)
+                    h2_content = db_worker.structure_content('h2')
+                    h3_content = db_worker.structure_content('h3')
 
-                    processed_pdf_path = processed_pdf_dir / Path(f'{pdf_file.stem}.pdf')
-                    docx_path = docx_dir / Path(f'{processed_pdf_path.stem}.docx')
-                    html_path = certain_html_dir / Path(f'{pdf_file.stem}.html')
 
-                    self.status_updated.emit(f"Обработка {pdf_file.name} (файл {index + 1}/{total_files})")
+                    for h2_header, h2_content in h2_content.items():
+                        self.db.insert_second_level_content(h2_header, h2_content, html_file_name)
+                        second_content_id = self.db.select_second_content_id(h2_header)
+                        self.db.insert_users_second_level_content(user_id, second_content_id)
 
-                    self.status_updated.emit(f"Конвертация PDF в изображения: {pdf_file.name}")
-                    pdf_converter = PDFConverter(pdf_file, images_dir, workers=8)
-                    pdf_converter.process()
-
-                    if not self.is_running:
-                        break
-
-                    self.status_updated.emit(f"Обработка изображений: {pdf_file.name}")
-                    extractor = StampsExtractor(images_dir, processed_images_dir, workers=8)
-                    extractor.process()
-
-                    if not self.is_running:
-                        break
-
-                    self.status_updated.emit(f"Создание PDF: {pdf_file.name}")
-                    images_converter = ImagesConverter(processed_images_dir, processed_pdf_path)
-                    images_converter.process()
-
-                    if not self.is_running:
-                        break
-
-                    self.status_updated.emit(f"Распознавание текста: {pdf_file.name}")
-                    ocr_processor = OCRProcessor(processed_pdf_path, docx_dir)
-                    ocr_processor.process()
-
-                    if not self.is_running:
-                        break
-
-                    self.status_updated.emit(f"Обработка документа: {pdf_file.name}")
-                    document_processor = DocumentProcessor(str(docx_path))
-                    document_processor.process()
-
-                    if not self.is_running:
-                        break
-
-                    self.status_updated.emit(f"Конвертация в HTML: {pdf_file.name}")
-                    html_converter = HTMLConverter(docx_path, html_path)
-                    html_converter.process()
-
-                    if not self.is_running:
-                        break
-
-                    self.status_updated.emit(f"Оптимизация HTML: {pdf_file.name}")
-                    html_processor = HTMLProcessor(html_path)
-                    html_processor.process()
-
-                    TablesFixer.finalize(html_path)
-                    Wrapper.finalize(html_path)
+                    for h3_header, h3_content in h3_content.items():
+                        self.db.insert_third_level_content(h3_header, h3_content, html_file_name)
+                        third_content_id = self.db.select_third_content_id(h3_header)
+                        self.db.insert_users_third_level_content(user_id, third_content_id)
 
                     end_time = time.time()
                     elapsed_time = end_time - start_time
 
-                    shutil.rmtree(images_dir, ignore_errors=True)
-                    shutil.rmtree(processed_images_dir, ignore_errors=True)
-                    shutil.rmtree(processed_pdf_dir, ignore_errors=True)
-                    shutil.rmtree(docx_dir, ignore_errors=True)
-
-                    self.file_processed.emit(pdf_file.name, elapsed_time)
-
-                    progress_value = int((index + 1) / total_files * 100)
-                    self.progress_updated.emit(progress_value)
+                    self.file_processed.emit(html_file_name, elapsed_time)
 
                 except Exception as e:
                     error_details = traceback.format_exc()
-                    self.error_occurred.emit(pdf_file.name, f"{str(e)}\n\n{error_details}")
+                    self.error_occurred.emit(html_file_name, f"{str(e)}\n\n{error_details}")
 
                     continue
-
             self.finished_all.emit()
-
         except Exception as e:
             self.error_occurred.emit("Общая ошибка", traceback.format_exc())
             self.finished_all.emit()
 
-
-class ProcessorWindow(QWidget):
-    def __init__(self, root):
+class DBWorkWindow(QWidget):
+    def __init__(self, root, login):
         super().__init__()
-        self.setWindowTitle("PDF Конвертер")
-
-        self.selected_dir = None
+        self.login = login
         self.worker = None
+        self.setWindowTitle("Система для работы с ОХЛП")
 
-        
         label_font_path = str(root / r'fonts/Montserrat/static/Montserrat-Medium.ttf')
         label_font = load_font(label_font_path, 13)
 
         btn_font_path = str(root / r'fonts/Montserrat/static/Montserrat-Black.ttf')
         btn_font = load_font(btn_font_path, 13)
 
-        self.choose_lbl = QLabel("Выберите директорию с PDF-файлами ОХЛП")
+        self.choose_lbl = QLabel("Выберите директорию со структурированными файлами ОХЛП")
         self.choose_lbl.setFont(label_font)
-        
+
         self.choose_btn = QPushButton("Выбрать директорию")
         self.choose_btn.setFont(btn_font)
-        
-        self.process_btn = QPushButton("Конвертировать файлы")
+
+        self.process_btn = QPushButton("Извлечь сущности в базу данных")
         self.process_btn.setFont(btn_font)
-        
+
         self.cancel_btn = QPushButton("Отмена")
         self.cancel_btn.setFont(btn_font)
         self.cancel_btn.setEnabled(False)
@@ -230,7 +173,7 @@ class ProcessorWindow(QWidget):
     def choose_dir(self):
         dir_path = QFileDialog.getExistingDirectory(
             self,
-            "Выберите директорию с PDF-файлами",
+            "Выберите директорию с HTML-файлами",
             "",
             QFileDialog.ShowDirsOnly
         )
@@ -239,25 +182,25 @@ class ProcessorWindow(QWidget):
             self.selected_dir = dir_path
             self.selected_dir_lbl.setText(f"Выбрана директория: {dir_path}")
 
-            pdf_files = self.get_pdf_files(dir_path)
+            pdf_files = self.get_html_files(dir_path)
 
             if pdf_files:
-                self.status_lbl.setText(f"Найдено PDF-файлов: {len(pdf_files)}")
+                self.status_lbl.setText(f"Найдено HTML-файлов: {len(pdf_files)}")
                 self.status_lbl.setStyleSheet("color: green;")
             else:
-                self.status_lbl.setText("В выбранной директории нет PDF-файлов!")
+                self.status_lbl.setText("В выбранной директории нет HTML-файлов!")
                 self.status_lbl.setStyleSheet("color: red;")
 
-    def get_pdf_files(self, dir_path):
-        pdf_files = []
+    def get_html_files(self, dir_path):
+        html_files = []
         try:
             for file in os.listdir(dir_path):
-                if file.lower().endswith('.pdf'):
-                    pdf_files.append(file)
+                if file.lower().endswith('.html'):
+                    html_files.append(file)
         except Exception as e:
             self.log_message(f"Ошибка при чтении директории: {e}")
 
-        return pdf_files
+        return html_files
 
     def log_message(self, message):
         """Добавление сообщения в лог"""
@@ -268,17 +211,16 @@ class ProcessorWindow(QWidget):
             self.log_text.verticalScrollBar().maximum()
         )
 
-    @Slot()
     def process(self):
         if not self.selected_dir:
             self.status_lbl.setText("Сначала выберите директорию!")
             self.status_lbl.setStyleSheet("color: red;")
             return
 
-        pdf_dir = Path(self.selected_dir)
-        pdf_files = list(pdf_dir.glob("*.pdf"))
+        html_dir = Path(self.selected_dir)
+        html_files = list(html_dir.glob("*.html"))
 
-        if not pdf_files:
+        if not html_files:
             self.status_lbl.setText("В выбранной директории нет PDF-файлов!")
             self.status_lbl.setStyleSheet("color: red;")
             return
@@ -286,16 +228,7 @@ class ProcessorWindow(QWidget):
         self.log_text.clear()
         self.log_text.setVisible(True)
 
-        self.progress_bar.setVisible(True)
-        self.progress_bar.setValue(0)
-        self.current_file_lbl.setVisible(True)
-        self.time_lbl.setVisible(True)
-
-        self.choose_btn.setEnabled(False)
-        self.process_btn.setEnabled(False)
-        self.cancel_btn.setEnabled(True)
-
-        self.worker = Worker(pdf_dir)
+        self.worker = Worker(html_dir, self.login)
 
         self.worker.progress_updated.connect(self.update_progress)
         self.worker.status_updated.connect(self.update_status)
@@ -304,7 +237,7 @@ class ProcessorWindow(QWidget):
         self.worker.finished_all.connect(self.on_processing_finished)
 
         self.log_message("Начало обработки...")
-        self.log_message(f"Найдено файлов для обработки: {len(pdf_files)}")
+        self.log_message(f"Найдено файлов для обработки: {len(html_files)}")
         self.worker.start()
 
     @Slot()
@@ -388,14 +321,13 @@ class ProcessorWindow(QWidget):
         else:
             event.accept()
 
-
 # if __name__ == "__main__":
 #     app = QApplication([])
 #
 #     current_file = Path(__file__).resolve()
 #     root = current_file.parents[1]
 #
-#     widget = ProcessorWindow(root)
+#     widget = DBWorkWindow(root)
 #
 #     with open(root / r"styles/light.qss", "r", encoding="utf-8") as f:
 #         style_sheet = f.read()
