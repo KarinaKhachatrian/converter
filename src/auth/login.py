@@ -51,7 +51,6 @@ class LoginWindow(QWidget):
         self.password_lbl = QLabel('Пароль')
         self.password_lbl.setFont(label_font)
         self.password_field = QLineEdit()
-        self.password_field.setFont(label_font)
         self.password_field.setEchoMode(QLineEdit.EchoMode.Password)
 
         self.login_btn = QPushButton('Войти')

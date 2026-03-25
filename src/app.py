@@ -73,7 +73,6 @@ class Application:
         )
 
     def on_login_successful(self):
-        """Обработчик успешного входа"""
         email = self.login_window.get_email()
 
         self.db_work_window = DBWorkWindow(self.root, email)

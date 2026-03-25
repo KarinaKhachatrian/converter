@@ -101,12 +101,18 @@ class Database:
         self.cur.execute("""SELECT third_content_id FROM third_level_contents WHERE third_header = %s;""", (third_header,))
         return self.cur.fetchone()[0]
 
-    def check_credentials(self, email, password):
+    def check_credentials(self, email, password) -> bool:
         self.cur.execute("""
                 SELECT * FROM users 
                 WHERE email = %s AND password = %s;
             """, (email, password))
         return self.cur.fetchone() is not None
+
+    def check_user_exists(self, email) -> bool:
+        self.cur.execute("""
+        SELECT 1 FROM users WHERE email = %s;""", (email,))
+        return self.cur.fetchone() is not None
+
 
     def insert_second_level_content(self, second_header, content, filename):
         self.cur.execute("""INSERT INTO second_level_contents(
@@ -163,3 +169,16 @@ class Database:
     def drop_users_third_level_contents(self):
         self.cur.execute("""DROP TABLE IF EXISTS users_third_level_content CASCADE;""")
         self.conn.commit()
+
+# db = Database(
+#             dbname="rls",
+#             user="postgres",
+#             password="postgres",
+#             host="localhost"
+#         )
+#
+# s = db.check_user_exists(
+#     'test@test.com'
+# )
+#
+# print(s)

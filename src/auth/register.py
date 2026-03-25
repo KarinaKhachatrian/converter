@@ -70,13 +70,11 @@ class RegisterWindow(QWidget):
         self.password_lbl = QLabel('Пароль')
         self.password_lbl.setFont(label_font)
         self.password_field = QLineEdit()
-        self.password_field.setFont(label_font)
         self.password_field.setEchoMode(QLineEdit.EchoMode.Password)
 
         self.confirm_password_lbl = QLabel('Подтверждение пароля')
         self.confirm_password_lbl.setFont(label_font)
         self.confirm_password_field = QLineEdit()
-        self.confirm_password_field.setFont(label_font)
         self.confirm_password_field.setEchoMode(QLineEdit.EchoMode.Password)
 
         self.register_btn = QPushButton('Зарегистрироваться')
@@ -134,38 +132,41 @@ class RegisterWindow(QWidget):
         password = self.password_field.text()
         confirm_password = self.confirm_password_field.text()
 
-        if not (self.auth_methods.empty_field_check(lastname) or
-                self.auth_methods.empty_field_check(firstname) or
-                self.auth_methods.empty_field_check(email) or
-                self.auth_methods.empty_field_check(password) or
-                self.auth_methods.empty_field_check(confirm_password)):
+        if not self.db.check_user_exists(email):
+            if not (self.auth_methods.empty_field_check(lastname) or
+                    self.auth_methods.empty_field_check(firstname) or
+                    self.auth_methods.empty_field_check(email) or
+                    self.auth_methods.empty_field_check(password) or
+                    self.auth_methods.empty_field_check(confirm_password)):
 
-            if not (self.auth_methods.len_field_check(lastname) or
-                    self.auth_methods.len_field_check(firstname) or
-                    self.auth_methods.len_field_check(email) or
-                    self.auth_methods.len_field_check(password) or
-                    self.auth_methods.len_field_check(confirm_password)):
+                if not (self.auth_methods.len_field_check(lastname) or
+                        self.auth_methods.len_field_check(firstname) or
+                        self.auth_methods.len_field_check(email) or
+                        self.auth_methods.len_field_check(password) or
+                        self.auth_methods.len_field_check(confirm_password)):
 
-                if self.auth_methods.email_check(email):
-                    if password == confirm_password:
-                        hashed_password = hash_password(password)
-                        self.db.insert_users(lastname, firstname, patronymic, email, hashed_password)
+                    if self.auth_methods.email_check(email):
+                        if password == confirm_password:
+                            hashed_password = hash_password(password)
+                            self.db.insert_users(lastname, firstname, patronymic, email, hashed_password)
 
-                        department_id = self.db.select_department_id(department)
-                        user_id = self.db.select_user_id(email)
-                        self.db.insert_users_departments(user_id, department_id)
+                            department_id = self.db.select_department_id(department)
+                            user_id = self.db.select_user_id(email)
+                            self.db.insert_users_departments(user_id, department_id)
 
-                        self.auth_methods.show_message("Регистрация прошла успешно!")
+                            self.auth_methods.show_message("Регистрация прошла успешно!")
 
-                        self.registration_successful.emit()
+                            self.registration_successful.emit()
+                        else:
+                            self.auth_methods.show_warning("Пароли не совпадают")
                     else:
-                        self.auth_methods.show_warning("Пароли не совпадают")
+                        self.auth_methods.show_warning("Неверный формат электронной почты")
                 else:
-                    self.auth_methods.show_warning("Неверный формат электронной почты")
+                    self.auth_methods.show_warning("Введённые данные не могут быть короче 1 символа")
             else:
-                self.auth_methods.show_warning("Введённые данные не могут быть короче 1 символа")
+                self.auth_methods.show_warning("Заполните все поля")
         else:
-            self.auth_methods.show_warning("Заполните все поля")
+            self.auth_methods.show_warning('Пользователь уже существует')
 
 
 # if __name__ == "__main__":
