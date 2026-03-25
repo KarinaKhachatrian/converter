@@ -1,4 +1,3 @@
-import sys
 import os
 from pathlib import Path
 import shutil
@@ -6,11 +5,11 @@ import time
 import traceback
 
 from PySide6.QtWidgets import (
-    QWidget, QLabel, QVBoxLayout,
+    QLabel, QVBoxLayout,
     QPushButton, QTextEdit,
-    QMessageBox, QProgressBar, QFileDialog, QApplication
+    QMessageBox, QProgressBar, QFileDialog
 )
-from PySide6.QtCore import Signal, QThread, Slot, QSize
+from PySide6.QtCore import Signal, Slot, QSize
 from PySide6.QtGui import QIcon
 
 from src.pdf_processor.pdf_converter import PDFConverter
@@ -22,27 +21,31 @@ from src.pdf_processor.html_converter import HTMLConverter
 from src.pdf_processor.html_processor import HTMLProcessor
 from src.pdf_processor.tables_fixer import TablesFixer
 from src.pdf_processor.wrapper import Wrapper
+from src.interfaces import Worker, Processor
 
 from src.auth.load_fonts import load_font
 
 
-class Worker(QThread):
+class PDFWorker(Worker):
     progress_updated = Signal(int)
     status_updated = Signal(str)
     file_processed = Signal(str, float)
     error_occurred = Signal(str, str)
     finished_all = Signal()
 
-    def __init__(self, pdf_dir):
-        super().__init__()
+    def __init__(self, pdf_dir, login):
+        super().__init__(pdf_dir,  login)
         self.pdf_dir = pdf_dir
+        self.login = login
         self.is_running = True
 
-    def stop(self):
-        """Остановка обработки"""
+    def run(self):
+        self.start_worker()
+
+    def stop_worker(self):
         self.is_running = False
 
-    def run(self):
+    def start_worker(self):
         try:
             pdf_files = list(self.pdf_dir.glob("*.pdf"))
             total_files = len(pdf_files)
@@ -142,19 +145,19 @@ class Worker(QThread):
 
             self.finished_all.emit()
 
-        except Exception as e:
+
+        except Exception:
             self.error_occurred.emit("Общая ошибка", traceback.format_exc())
             self.finished_all.emit()
 
 
-class ProcessorWindow(QWidget):
-    def __init__(self, root):
+class ProcessorWindow(Processor):
+    def __init__(self, root, login):
         super().__init__()
-        self.setWindowTitle("PDF Конвертер")
-
-        self.selected_dir = None
+        self.login = login
         self.worker = None
-
+        self.selected_dir = None
+        self.setWindowTitle("PDF Конвертер")
         
         label_font_path = str(root / r'fonts/Montserrat/static/Montserrat-Medium.ttf')
         label_font = load_font(label_font_path, 13)
@@ -248,19 +251,7 @@ class ProcessorWindow(QWidget):
                 self.status_lbl.setText("В выбранной директории нет PDF-файлов!")
                 self.status_lbl.setStyleSheet("color: red;")
 
-    def get_pdf_files(self, dir_path):
-        pdf_files = []
-        try:
-            for file in os.listdir(dir_path):
-                if file.lower().endswith('.pdf'):
-                    pdf_files.append(file)
-        except Exception as e:
-            self.log_message(f"Ошибка при чтении директории: {e}")
-
-        return pdf_files
-
     def log_message(self, message):
-        """Добавление сообщения в лог"""
         timestamp = time.strftime("%H:%M:%S")
         self.log_text.append(f"[{timestamp}] {message}")
 
@@ -295,13 +286,13 @@ class ProcessorWindow(QWidget):
         self.process_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
 
-        self.worker = Worker(pdf_dir)
+        self.worker = PDFWorker(pdf_dir, self.login)
 
         self.worker.progress_updated.connect(self.update_progress)
         self.worker.status_updated.connect(self.update_status)
-        self.worker.file_processed.connect(self.on_file_processed)
-        self.worker.error_occurred.connect(self.on_error)
-        self.worker.finished_all.connect(self.on_processing_finished)
+        self.worker.file_processed.connect(self.file_processed)
+        self.worker.error_occurred.connect(self.error)
+        self.worker.finished_all.connect(self.processing_finished)
 
         self.log_message("Начало обработки...")
         self.log_message(f"Найдено файлов для обработки: {len(pdf_files)}")
@@ -309,7 +300,6 @@ class ProcessorWindow(QWidget):
 
     @Slot()
     def cancel_processing(self):
-        """Отмена обработки"""
         if self.worker and self.worker.isRunning():
             self.worker.stop_worker()
             self.cancel_btn.setEnabled(False)
@@ -319,19 +309,16 @@ class ProcessorWindow(QWidget):
 
     @Slot(int)
     def update_progress(self, value):
-        """Обновление прогресс-бара"""
         self.progress_bar.setValue(value)
 
     @Slot(str)
     def update_status(self, status):
-        """Обновление статуса"""
         self.status_lbl.setText(status)
         self.current_file_lbl.setText(f"Текущая операция: {status}")
         self.log_message(status)
 
     @Slot(str, float)
-    def on_file_processed(self, filename, elapsed_time):
-        """Обработка успешно завершенного файла"""
+    def file_processed(self, filename, elapsed_time):
         time_str = f"{elapsed_time:.2f} сек."
         if elapsed_time > 60:
             minutes = int(elapsed_time // 60)
@@ -342,8 +329,7 @@ class ProcessorWindow(QWidget):
         self.log_message(f"Файл {filename} обработан за {time_str}")
 
     @Slot(str, str)
-    def on_error(self, filename, error_details):
-        """Обработка ошибок"""
+    def error(self, filename, error_details):
         error_message = f"Ошибка при обработке {filename}"
         self.status_lbl.setText(error_message)
         self.status_lbl.setStyleSheet("color: red;")
@@ -351,8 +337,7 @@ class ProcessorWindow(QWidget):
         self.log_message(f"Детали ошибки:\n{error_details}")
 
     @Slot()
-    def on_processing_finished(self):
-        """Завершение обработки"""
+    def processing_finished(self):
         self.choose_btn.setEnabled(True)
         self.process_btn.setEnabled(True)
         self.cancel_btn.setEnabled(False)
@@ -367,8 +352,7 @@ class ProcessorWindow(QWidget):
         self.current_file_lbl.setText("Все файлы обработаны")
         self.log_message("=== ОБРАБОТКА ЗАВЕРШЕНА ===")
 
-    def closeEvent(self, event):
-        """Обработка закрытия окна"""
+    def close_event(self, event):
         if self.worker and self.worker.isRunning():
             reply = QMessageBox.question(
                 self,
@@ -388,20 +372,13 @@ class ProcessorWindow(QWidget):
         else:
             event.accept()
 
+    def get_pdf_files(self, dir_path):
+        pdf_files = []
+        try:
+            for file in os.listdir(dir_path):
+                if file.lower().endswith('.pdf'):
+                    pdf_files.append(file)
+        except Exception as e:
+            self.log_message(f"Ошибка при чтении директории: {e}")
 
-# if __name__ == "__main__":
-#     app = QApplication([])
-#
-#     current_file = Path(__file__).resolve()
-#     root = current_file.parents[1]
-#
-#     widget = ProcessorWindow(root)
-#
-#     with open(root / r"styles/light.qss", "r", encoding="utf-8") as f:
-#         style_sheet = f.read()
-#         widget.setStyleSheet(style_sheet)
-#
-#     widget.resize(700, 300)
-#     widget.show()
-#
-#     sys.exit(app.exec())
+        return pdf_files

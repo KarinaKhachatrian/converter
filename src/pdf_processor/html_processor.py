@@ -27,27 +27,31 @@ class HTMLProcessor(Processor):
     @staticmethod
     def apply_headers(soup: BeautifulSoup) -> None:
         for strong in soup.find_all('strong'):
-            text = strong.text.replace('\n', ' ')
-            processed_text = text.split('.')
+            text = strong.get_text(strip=True).replace('\n', ' ')
 
-            if len(processed_text) >= 2:
-                if processed_text[0].isdigit():
-                    h2_check = any(processed_text[1].lstrip().startswith(h2) for h2 in h2_headers)
+            if len(text) >= 2:
+                if text[0].isdigit():
+                    h2_check = any(h2 in text for h2 in h2_headers)
+                    h3_check = any(h3 in text for h3 in h3_headers)
+
                     if h2_check:
+                        print(text)
                         h2_tag = soup.new_tag('h2')
                         h2_tag.string = text
                         strong.replace_with(h2_tag)
 
-                if processed_text[0].isdigit() and processed_text[1].isdigit():
-                    h3_key = None
-                    for h3_header in h3_headers.keys():
-                        if processed_text[2].strip().startswith(h3_header):
-                            h3_key = h3_header
-                            break
-                    if h3_key:
+                    elif h3_check:
                         h3_tag = soup.new_tag('h3')
                         h3_tag.string = text
                         strong.replace_with(h3_tag)
+
+    @staticmethod
+    def clean_headers(soup: BeautifulSoup, tag_name: str) -> None:
+        headers = soup.find_all(tag_name)
+
+        for header in headers:
+            if header.parent.name == 'p':
+                header.parent.unwrap()
 
     @staticmethod
     def clean_pages(soup: BeautifulSoup) -> None:
@@ -67,6 +71,8 @@ class HTMLProcessor(Processor):
 
         self.fix_images(soup)
         self.apply_headers(soup)
+        self.clean_headers(soup, 'h2')
+        self.clean_headers(soup, 'h3')
         self.clean_pages(soup)
         self.write_content(self.html_path, soup.prettify())
 

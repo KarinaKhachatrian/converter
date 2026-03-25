@@ -16,7 +16,6 @@ class Structurer:
 
         return soup
 
-
     def structure_content(self, tag_name: str) -> dict:
         with open(self.html_path, 'r', encoding='utf-8') as f:
             soup = BeautifulSoup(f, 'html.parser')

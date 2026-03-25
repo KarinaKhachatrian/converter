@@ -27,15 +27,6 @@ class ModelWindow(QWidget):
         self.demonstration_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.demonstration_lbl.setFont(title_font)
 
-        self.choose_lbl = QLabel("Выберите файл ОХЛП")
-        self.choose_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.choose_lbl.setFont(label_font)
-
-        self.choose_btn = QPushButton("Выбрать директорию")
-        self.choose_btn.setFont(btn_font)
-
-        self.demonstrate_btn = QPushButton('Обнаружить штамп')
-        self.demonstrate_btn.setFont(btn_font)
 
         self.back_btn = QPushButton("Назад")
         self.back_btn.setFont(btn_font)
@@ -49,9 +40,6 @@ class ModelWindow(QWidget):
         self.layout.setContentsMargins(50, 30, 50, 30)
 
         self.layout.addWidget(self.demonstration_lbl)
-        self.layout.addWidget(self.choose_lbl)
-        self.layout.addWidget(self.choose_btn)
-        self.layout.addWidget(self.demonstrate_btn)
         self.layout.addWidget(self.back_btn)
         self.layout.addStretch()
 

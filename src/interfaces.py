@@ -38,15 +38,15 @@ class Processor(QWidget):
         """Обновление статуса"""
 
     @Slot(str, float)
-    def on_file_processed(self, filename, elapsed_time):
+    def file_processed(self, filename, elapsed_time):
         """Обработка успешно завершенного файла"""
 
     @Slot(str, str)
-    def on_error(self, filename, error_details):
+    def error(self, filename, error_details):
         """Обработка ошибок"""
 
     @Slot()
-    def on_processing_finished(self):
+    def processing_finished(self):
         """Завершение обработки"""
 
     def get_files(self):

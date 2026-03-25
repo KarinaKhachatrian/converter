@@ -1,8 +1,5 @@
 from pathlib import Path
 
-from concurrent.futures import ThreadPoolExecutor
-import multiprocessing
-
 import numpy as np
 import cv2
 from ultralytics import YOLO
@@ -14,31 +11,25 @@ from src.pdf_processor.get_base_path import get_base_path
 class StampsExtractor(Processor):
     def __init__(self, images_dir: Path,
                  output_dir: Path,
-                 weights_path: Path = None,
-                 workers=None):
+                 weights_path: Path = None
+        ):
         self.images_dir = images_dir
         self.output_dir = output_dir
         self.base_path = get_base_path()
 
         if weights_path is None:
             self.weights_path = Path(self.base_path) / Path('train') / Path('weights') / Path('best.pt')
-            print(self.weights_path)
         else:
-            w_path = Path(weights_path)
-            if w_path.is_absolute():
-                self.weights_path = w_path
-            else:
-                self.weights_path = self.base_path / w_path
+            self.weights_path = weights_path
 
-        self.workers = workers or multiprocessing.cpu_count()
         self.output_dir.mkdir(exist_ok=True)
 
-    def process_image(self, image_path: Path):
-        model = YOLO(self.weights_path)
+        self.model = YOLO(self.weights_path)
 
+    def process_image(self, image_path: Path):
         print(f"Обработка изображения {image_path.name}...")
 
-        results = model.predict(str(image_path), verbose=False)
+        results = self.model.predict(str(image_path), verbose=False)
 
         for r in results:
             img = np.copy(r.orig_img)
@@ -76,5 +67,5 @@ class StampsExtractor(Processor):
     def process(self):
         images = list(self.images_dir.glob("*.png"))
 
-        with ThreadPoolExecutor(max_workers=self.workers) as ex:
-            ex.map(self.process_image, images)
+        for image in images:
+            self.process_image(image)

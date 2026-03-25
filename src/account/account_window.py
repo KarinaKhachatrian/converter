@@ -36,7 +36,7 @@ class AccountWindow(QWidget):
         self.db_btn = QPushButton('Работа с базой данных')
         self.db_btn.setFont(btn_font)
 
-        self.stamps_btn = QPushButton('Работа модели обнаружения штампов')
+        self.stamps_btn = QPushButton('Просмотр и редактирование')
         self.stamps_btn.setFont(btn_font)
 
         self.layout = QVBoxLayout(self)

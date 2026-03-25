@@ -34,8 +34,8 @@ class DBWorker(Worker):
             password="postgres",
             host="localhost"
         )
-        self.is_running = True
         self.login = login
+        self.is_running = True
 
     def stop_worker(self):
         self.is_running = False
@@ -90,7 +90,7 @@ class DBWorker(Worker):
                     continue
             self.finished_all.emit()
 
-        except Exception as e:
+        except Exception:
             self.error_occurred.emit("Общая ошибка", traceback.format_exc())
             self.finished_all.emit()
 
@@ -213,7 +213,7 @@ class DBWorkWindow(Processor):
         self.log_message(status)
 
     @Slot(str, float)
-    def on_file_processed(self, filename, elapsed_time):
+    def file_processed(self, filename, elapsed_time):
         time_str = f"{elapsed_time:.2f} сек."
         if elapsed_time > 60:
             minutes = int(elapsed_time // 60)
@@ -224,7 +224,7 @@ class DBWorkWindow(Processor):
         self.log_message(f"Файл {filename} обработан за {time_str}")
 
     @Slot(str, str)
-    def on_error(self, filename, error_details):
+    def error(self, filename, error_details):
         error_message = f"Ошибка при обработке {filename}"
         self.status_lbl.setText(error_message)
         self.status_lbl.setStyleSheet("color: red;")
@@ -232,7 +232,7 @@ class DBWorkWindow(Processor):
         self.log_message(f"Детали ошибки:\n{error_details}")
 
     @Slot()
-    def on_processing_finished(self):
+    def processing_finished(self):
         self.choose_btn.setEnabled(True)
         self.process_btn.setEnabled(True)
         self.cancel_btn.setEnabled(False)
@@ -303,31 +303,14 @@ class DBWorkWindow(Processor):
         self.log_text.clear()
         self.log_text.setVisible(True)
 
-        self.worker = Worker(html_dir, self.login)
+        self.worker = DBWorker(html_dir, self.login)
 
         self.worker.progress_updated.connect(self.update_progress)
         self.worker.status_updated.connect(self.update_status)
-        self.worker.file_processed.connect(self.on_file_processed)
-        self.worker.error_occurred.connect(self.on_error)
-        self.worker.finished_all.connect(self.on_processing_finished)
+        self.worker.file_processed.connect(self.file_processed)
+        self.worker.error_occurred.connect(self.error)
+        self.worker.finished_all.connect(self.processing_finished)
 
         self.log_message("Начало обработки...")
         self.log_message(f"Найдено файлов для обработки: {len(html_files)}")
         self.worker.start_worker()
-
-# if __name__ == "__main__":
-#     app = QApplication([])
-#
-#     current_file = Path(__file__).resolve()
-#     root = current_file.parents[1]
-#
-#     widget = DBWorkWindow(root, "test")
-#
-#     with open(root / r"styles/light.qss", "r", encoding="utf-8") as f:
-#         style_sheet = f.read()
-#         widget.setStyleSheet(style_sheet)
-#
-#     widget.resize(700, 300)
-#     widget.show()
-#
-#     sys.exit(app.exec())
