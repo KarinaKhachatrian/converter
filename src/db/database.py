@@ -101,6 +101,38 @@ class Database:
         self.cur.execute("""SELECT third_content_id FROM third_level_contents WHERE third_header = %s;""", (third_header,))
         return self.cur.fetchone()[0]
 
+    def select_filenames(self, user_id):
+        self.cur.execute("""SELECT DISTINCT sc.filename 
+                        FROM second_level_contents AS sc
+                        JOIN users_second_level_content AS usc
+                        ON usc.second_content_id = sc.second_content_id
+                        WHERE usc.user_id = %s;""", (user_id,))
+        return [row[0].strip() for row in self.cur.fetchall()]
+
+    def select_second_level_headers(self, filename):
+        self.cur.execute("""SELECT second_header 
+                        FROM second_level_contents
+                        WHERE filename = %s;""", (filename,))
+        return [row[0].strip() for row in self.cur.fetchall()]
+
+    def select_third_level_headers(self, filename):
+        self.cur.execute("""SELECT third_header 
+                        FROM third_level_contents
+                        WHERE filename = %s;""", (filename,))
+        return [row[0].strip() for row in self.cur.fetchall()]
+
+    def select_second_level_content(self, second_header, filename):
+        self.cur.execute("""SELECT content FROM second_level_contents
+                        WHERE second_header = %s 
+                        AND filename = %s;""", (second_header, filename,))
+        return self.cur.fetchone()[0]
+
+    def select_third_level_content(self, third_header, filename):
+        self.cur.execute("""SELECT content FROM third_level_contents
+                        WHERE third_header = %s 
+                        AND filename = %s;""", (third_header, filename,))
+        return self.cur.fetchone()[0]
+
     def check_credentials(self, email, password) -> bool:
         self.cur.execute("""
                 SELECT * FROM users 
