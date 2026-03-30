@@ -46,6 +46,7 @@ class CRUDWindow(QWidget):
         self.filenames_combo = QComboBox(self)
         self.filenames_combo.addItems(filenames)
         self.filenames_combo.setFont(label_font)
+        self.filenames_combo.currentTextChanged.connect(self.change_filename)
 
         self.current_filename = self.filenames_combo.currentText()
 
@@ -108,12 +109,25 @@ class CRUDWindow(QWidget):
         self.layout.addWidget(self.third_combo)
 
         self.layout.addWidget(self.show_btn)
-        #self.layout.addWidget(self.content_line)
         self.layout.addWidget(self.content_plain)
 
         self.layout.addStretch()
 
         self.layout.addWidget(self.back_btn)
+
+    def change_filename(self, new_filename):
+        self.current_filename = new_filename
+
+        second_level_headers = self.db.select_second_level_headers(self.current_filename)
+        third_level_headers = self.db.select_third_level_headers(self.current_filename)
+
+        self.second_combo.clear()
+        self.second_combo.addItems(second_level_headers)
+
+        self.third_combo.clear()
+        self.third_combo.addItems(third_level_headers)
+
+        self.content_plain.clear()
 
 
     def show_second_level_content(self):
