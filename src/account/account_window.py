@@ -36,8 +36,8 @@ class AccountWindow(QWidget):
         self.db_btn = QPushButton('Работа с базой данных')
         self.db_btn.setFont(btn_font)
 
-        self.stamps_btn = QPushButton('Просмотр и редактирование')
-        self.stamps_btn.setFont(btn_font)
+        self.show_info_btn = QPushButton('Просмотр структурированных данных')
+        self.show_info_btn.setFont(btn_font)
 
         self.layout = QVBoxLayout(self)
 
@@ -52,7 +52,7 @@ class AccountWindow(QWidget):
 
         self.layout.addWidget(self.convert_btn)
         self.layout.addWidget(self.db_btn)
-        self.layout.addWidget(self.stamps_btn)
+        self.layout.addWidget(self.show_info_btn)
 
 # if __name__ == "__main__":
 #     app = QApplication([])

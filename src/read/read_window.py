@@ -1,15 +1,15 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Slot, QSize
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton, QLineEdit, QPlainTextEdit
+from PySide6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton, QPlainTextEdit
 
 from src.auth.load_fonts import load_font
 from src.db.database import Database
 
 
-class CRUDWindow(QWidget):
+class ReadWindow(QWidget):
     def __init__(self, root, user_id):
         super().__init__()
         self.user_id = user_id
@@ -78,12 +78,9 @@ class CRUDWindow(QWidget):
 
         self.show_btn = QPushButton('Показать данные')
         self.show_btn.setFont(btn_font)
-        self.show_btn.setIcon(icon)
         self.show_btn.setIconSize(QSize(30, 30))
         self.show_btn.clicked.connect(self.show_content)
 
-        # self.content_line = QLineEdit()
-        # self.content_line.setFont(label_font)
         self.content_plain = QPlainTextEdit()
         self.content_plain.setReadOnly(True)
         self.content_plain.setFont(label_font)
@@ -149,19 +146,19 @@ class CRUDWindow(QWidget):
             self.content_plain.setPlainText(third_content)
 
 
-if __name__ == "__main__":
-    app = QApplication([])
-
-    current_file = Path(__file__).resolve()
-    root = current_file.parents[1]
-
-    widget = CRUDWindow(root, '1')
-
-    with open(root / r"styles/light.qss", "r", encoding="utf-8") as f:
-        style_sheet = f.read()
-        widget.setStyleSheet(style_sheet)
-
-    widget.resize(800, 600)
-    widget.show()
-
-    sys.exit(app.exec())
+# if __name__ == "__main__":
+#     app = QApplication([])
+#
+#     current_file = Path(__file__).resolve()
+#     root = current_file.parents[1]
+#
+#     widget = ReadWindow(root, '1')
+#
+#     with open(root / r"styles/light.qss", "r", encoding="utf-8") as f:
+#         style_sheet = f.read()
+#         widget.setStyleSheet(style_sheet)
+#
+#     widget.resize(800, 600)
+#     widget.show()
+#
+#     sys.exit(app.exec())
