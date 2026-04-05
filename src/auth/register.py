@@ -1,7 +1,9 @@
-from PySide6.QtCore import Qt, Slot, Signal
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QLineEdit, QComboBox, QPushButton
+from PySide6.QtCore import Qt, Slot, Signal, QSize
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QComboBox, QPushButton
+from PySide6.QtGui import QIcon
 
 from src.db.database import Database
+from src.db.init_db import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
 from src.db.exec_select import departments
 
 from src.auth.hash_password import hash_password
@@ -9,23 +11,38 @@ from src.auth.load_fonts import load_font
 
 from src.auth.auth_methods import AuthMethods
 
+
 class RegisterWindow(QWidget):
     registration_successful = Signal()
 
     def __init__(self, root, login_window=None):
         super().__init__()
-        self.setWindowTitle("Система для работы с ОХЛП")
+        self.setWindowTitle('Система для работы с ОХЛП')
 
         self.db = Database(
-            dbname="rls",
-            user="postgres",
-            password="postgres",
-            host="localhost"
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST
         )
 
+        self.root = root
         self.login_window = login_window
-
         self.auth_methods = AuthMethods()
+
+        self.open_eye_icon = QIcon(str(self.root / 'icons/open_eye.png'))
+        self.close_eye_icon = QIcon(str(self.root / 'icons/close_eye.png'))
+
+        self.light_icon = QIcon(str(self.root / 'icons/sun.png'))
+        self.dark_icon = QIcon(str(self.root / 'icons/moon.png'))
+        self.is_light_theme = True
+
+        self.theme_btn = QPushButton()
+        self.theme_btn.setFixedSize(QSize(35, 35))
+        self.theme_btn.setIcon(self.light_icon)
+        self.theme_btn.setIconSize(QSize(25, 25))
+        self.theme_btn.setStyleSheet('background-color: #F5F5F7;')
+        self.theme_btn.clicked.connect(self.change_theme)
 
         self.greeting_lbl = QLabel('Добро пожаловать!\nЗарегистрируйтесь для работы с системой')
         self.greeting_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -67,6 +84,28 @@ class RegisterWindow(QWidget):
         self.department_combo.addItems(departments)
         self.department_combo.setFont(label_font)
 
+        self.open_password_btn = QPushButton()
+        self.open_password_btn.setIcon(self.open_eye_icon)
+        self.open_password_btn.setIconSize(QSize(15, 15))
+        self.open_password_btn.setStyleSheet('background-color: #F5F5F7;')
+        self.open_password_btn.clicked.connect(
+            lambda: self.auth_methods.toggle_password_visibility(self.open_password_btn,
+                                                                 self.password_field,
+                                                                 self.open_eye_icon,
+                                                                 self.close_eye_icon,
+                                                                 label_font))
+
+        self.confirm_open_password_btn = QPushButton()
+        self.confirm_open_password_btn.setIcon(self.open_eye_icon)
+        self.confirm_open_password_btn.setIconSize(QSize(15, 15))
+        self.confirm_open_password_btn.setStyleSheet('background-color: #F5F5F7;')
+        self.confirm_open_password_btn.clicked.connect(
+            lambda: self.auth_methods.toggle_password_visibility(self.confirm_open_password_btn,
+                                                                 self.confirm_password_field,
+                                                                 self.open_eye_icon,
+                                                                 self.close_eye_icon,
+                                                                 label_font))
+
         self.password_lbl = QLabel('Пароль')
         self.password_lbl.setFont(label_font)
         self.password_field = QLineEdit()
@@ -76,6 +115,14 @@ class RegisterWindow(QWidget):
         self.confirm_password_lbl.setFont(label_font)
         self.confirm_password_field = QLineEdit()
         self.confirm_password_field.setEchoMode(QLineEdit.EchoMode.Password)
+
+        password_layout = QHBoxLayout()
+        password_layout.addWidget(self.password_field)
+        password_layout.addWidget(self.open_password_btn)
+
+        confirm_password_layout = QHBoxLayout()
+        confirm_password_layout.addWidget(self.confirm_password_field)
+        confirm_password_layout.addWidget(self.confirm_open_password_btn)
 
         self.register_btn = QPushButton('Зарегистрироваться')
         self.register_btn.setFont(btn_font)
@@ -90,8 +137,11 @@ class RegisterWindow(QWidget):
         self.layout.setSpacing(10)
         self.layout.setContentsMargins(50, 30, 50, 30)
 
-        self.layout.addWidget(self.greeting_lbl)
-        self.layout.addStretch()
+        greeting_layout = QHBoxLayout()
+        greeting_layout.addWidget(self.greeting_lbl)
+        greeting_layout.addWidget(self.theme_btn)
+
+        self.layout.addLayout(greeting_layout)
 
         self.layout.addWidget(self.lastname_lbl)
         self.layout.addWidget(self.lastname_field)
@@ -109,10 +159,10 @@ class RegisterWindow(QWidget):
         self.layout.addWidget(self.department_combo)
 
         self.layout.addWidget(self.password_lbl)
-        self.layout.addWidget(self.password_field)
+        self.layout.addLayout(password_layout)
 
         self.layout.addWidget(self.confirm_password_lbl)
-        self.layout.addWidget(self.confirm_password_field)
+        self.layout.addLayout(confirm_password_layout)
 
         self.layout.addStretch()
 
@@ -120,6 +170,21 @@ class RegisterWindow(QWidget):
 
         self.layout.addWidget(self.login_lbl)
         self.layout.addWidget(self.login_btn)
+
+    def change_theme(self) -> None:
+        widget = self
+        if self.is_light_theme:
+            with open(self.root / r'styles/dark.qss', 'r', encoding='utf-8') as f:
+                dark_theme = f.read()
+                widget.setStyleSheet(dark_theme)
+            self.theme_btn.setIcon(self.dark_icon)
+            self.is_light_theme = False
+        else:
+            with open(self.root / r'styles/light.qss', 'r', encoding='utf-8') as f:
+                light_theme = f.read()
+                widget.setStyleSheet(light_theme)
+            self.theme_btn.setIcon(self.light_icon)
+            self.is_light_theme = True
 
 
     @Slot()
@@ -154,35 +219,16 @@ class RegisterWindow(QWidget):
                             user_id = self.db.select_user_id(email)
                             self.db.insert_users_departments(user_id, department_id)
 
-                            self.auth_methods.show_message("Регистрация прошла успешно!")
+                            self.auth_methods.show_message('Регистрация прошла успешно!')
 
                             self.registration_successful.emit()
                         else:
-                            self.auth_methods.show_warning("Пароли не совпадают")
+                            self.auth_methods.show_warning('Пароли не совпадают')
                     else:
-                        self.auth_methods.show_warning("Неверный формат электронной почты")
+                        self.auth_methods.show_warning('Неверный формат электронной почты')
                 else:
-                    self.auth_methods.show_warning("Введённые данные не могут быть короче 1 символа")
+                    self.auth_methods.show_warning('Введённые данные не могут быть короче 1 символа')
             else:
-                self.auth_methods.show_warning("Заполните все поля")
+                self.auth_methods.show_warning('Заполните все поля')
         else:
             self.auth_methods.show_warning('Пользователь уже существует')
-
-
-# if __name__ == "__main__":
-#     app = QApplication([])
-#
-#     current_file = Path(__file__).resolve()
-#     root = current_file.parents[1]
-#
-#     widget = RegisterWindow(root)
-#
-#     with open(root / r"styles/light.qss", "r", encoding="utf-8") as f:
-#         style_sheet = f.read()
-#         widget.setStyleSheet(style_sheet)
-#
-#     widget.resize(800, 600)
-#     widget.show()
-#
-#     sys.exit(app.exec())
-

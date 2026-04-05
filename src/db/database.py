@@ -133,6 +133,10 @@ class Database:
                         AND filename = %s;""", (third_header, filename,))
         return self.cur.fetchone()[0]
 
+    def select_username(self, email):
+        self.cur.execute("""SELECT firstname FROM users WHERE email = %s;""", (email,))
+        return self.cur.fetchone()[0]
+
     def check_credentials(self, email, password) -> bool:
         self.cur.execute("""
                 SELECT * FROM users 
@@ -202,15 +206,3 @@ class Database:
         self.cur.execute("""DROP TABLE IF EXISTS users_third_level_content CASCADE;""")
         self.conn.commit()
 
-# db = Database(
-#             dbname="rls",
-#             user="postgres",
-#             password="postgres",
-#             host="localhost"
-#         )
-#
-# s = db.check_user_exists(
-#     'test@test.com'
-# )
-#
-# print(s)

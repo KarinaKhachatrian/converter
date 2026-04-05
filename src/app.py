@@ -1,10 +1,10 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtWidgets import QApplication
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from src.db.database import Database
+from src.db.init_db import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
 
 from src.auth.register import RegisterWindow
 from src.auth.login import LoginWindow
@@ -20,14 +20,15 @@ class Application:
         self.app = QApplication([])
         current_file = Path(__file__).resolve()
         self.root = current_file.parents[1] / 'src'
+
         self.db = Database(
-            dbname="rls",
-            user="postgres",
-            password="postgres",
-            host="localhost"
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST
         )
 
-        with open(self.root / r"styles/light.qss", "r", encoding="utf-8") as f:
+        with open(self.root / r'styles/light.qss', 'r', encoding='utf-8') as f:
             self.style_sheet = f.read()
 
         self.db_work_window = None
@@ -45,10 +46,6 @@ class Application:
         self.login_window = LoginWindow(self.root)
         self.login_window.resize(800, 400)
         self.login_window.setStyleSheet(self.style_sheet)
-
-        self.account_window = AccountWindow(self.root)
-        self.account_window.resize(700, 300)
-        self.account_window.setStyleSheet(self.style_sheet)
 
         self.register_window.login_window = self.login_window
         self.login_window.register_window = self.register_window
@@ -70,12 +67,17 @@ class Application:
             lambda: switch_window(self.login_window, self.register_window)
         )
 
-        self.account_window.db_btn.clicked.connect(self.db_btn_clicked)
-        self.account_window.show_info_btn.clicked.connect(self.show_info_btn_clicked)
 
     def login_successful(self):
         email = self.login_window.get_email()
         user_id = self.db.select_user_id(email)
+        username = self.db.select_username(email)
+
+        self.account_window = AccountWindow(self.root, username)
+        self.account_window.resize(700, 300)
+        self.account_window.setStyleSheet(self.style_sheet)
+        self.account_window.db_btn.clicked.connect(self.db_btn_clicked)
+        self.account_window.show_info_btn.clicked.connect(self.show_info_btn_clicked)
 
         self.db_work_window = DBWorkWindow(self.root, email)
         self.db_work_window.resize(800, 400)
@@ -107,15 +109,15 @@ class Application:
         if self.db_work_window is not None:
             switch_window(self.account_window, self.db_work_window)
         else:
-            QMessageBox.warning(self.account_window, "Ошибка",
-                                "Сначала выполните вход в систему")
+            QMessageBox.warning(self.account_window, 'Ошибка',
+                                'Сначала выполните вход в систему')
 
     def show_info_btn_clicked(self):
         if self.read_window is not None:
             switch_window(self.account_window, self.read_window)
         else:
-            QMessageBox.warning(self.account_window, "Ошибка",
-                                "Сначала выполните вход в систему")
+            QMessageBox.warning(self.account_window, 'Ошибка',
+                                'Сначала выполните вход в систему')
 
     def run(self):
         self.setup_windows()

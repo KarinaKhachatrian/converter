@@ -1,18 +1,29 @@
-import sys
-from pathlib import Path
-
-from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QLineEdit, QComboBox, QPushButton
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
+from PySide6.QtGui import QIcon
 
 from src.auth.load_fonts import load_font
 
 
 class AccountWindow(QWidget):
-    def __init__(self, root):
+    def __init__(self, root, username):
         super().__init__()
-        self.setWindowTitle("Система для работы с ОХЛП")
 
-        self.greeting_lbl = QLabel('Добро пожаловать!')
+        self.root = root
+        self.setWindowTitle('Система для работы с ОХЛП')
+
+        self.light_icon = QIcon(str(self.root / 'icons/sun.png'))
+        self.dark_icon = QIcon(str(self.root / 'icons/moon.png'))
+        self.is_light_theme = True
+
+        self.theme_btn = QPushButton()
+        self.theme_btn.setFixedSize(QSize(35, 35))
+        self.theme_btn.setIcon(self.light_icon)
+        self.theme_btn.setIconSize(QSize(25, 25))
+        self.theme_btn.setStyleSheet('background-color: #F5F5F7;')
+        self.theme_btn.clicked.connect(self.change_theme)
+
+        self.greeting_lbl = QLabel(f'Добро пожаловать, {username}!')
         self.greeting_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         label_font_path = str(root / r'fonts/Montserrat/static/Montserrat-Medium.ttf')
@@ -44,8 +55,11 @@ class AccountWindow(QWidget):
         self.layout.setSpacing(10)
         self.layout.setContentsMargins(50, 30, 50, 30)
 
-        self.layout.addWidget(self.greeting_lbl)
-        self.layout.addStretch()
+        greeting_layout = QHBoxLayout()
+        greeting_layout.addWidget(self.greeting_lbl)
+        greeting_layout.addWidget(self.theme_btn)
+
+        self.layout.addLayout(greeting_layout)
 
         self.layout.addWidget(self.question_lbl)
         self.layout.addStretch()
@@ -54,19 +68,17 @@ class AccountWindow(QWidget):
         self.layout.addWidget(self.db_btn)
         self.layout.addWidget(self.show_info_btn)
 
-# if __name__ == "__main__":
-#     app = QApplication([])
-#
-#     current_file = Path(__file__).resolve()
-#     root = current_file.parents[1]
-#
-#     widget = AccountWindow(root)
-#
-#     with open(root / r"styles/light.qss", "r", encoding="utf-8") as f:
-#         style_sheet = f.read()
-#         widget.setStyleSheet(style_sheet)
-#
-#     widget.resize(700, 300)
-#     widget.show()
-#
-#     sys.exit(app.exec())
+    def change_theme(self) -> None:
+        widget = self
+        if self.is_light_theme:
+            with open(self.root / r'styles/dark.qss', 'r', encoding='utf-8') as f:
+                dark_theme = f.read()
+                widget.setStyleSheet(dark_theme)
+            self.theme_btn.setIcon(self.dark_icon)
+            self.is_light_theme = False
+        else:
+            with open(self.root / r'styles/light.qss', 'r', encoding='utf-8') as f:
+                light_theme = f.read()
+                widget.setStyleSheet(light_theme)
+            self.theme_btn.setIcon(self.light_icon)
+            self.is_light_theme = True

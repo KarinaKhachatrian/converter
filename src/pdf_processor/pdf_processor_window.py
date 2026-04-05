@@ -5,7 +5,7 @@ import time
 import traceback
 
 from PySide6.QtWidgets import (
-    QLabel, QVBoxLayout,
+    QLabel, QVBoxLayout, QHBoxLayout,
     QPushButton, QTextEdit,
     QMessageBox, QProgressBar, QFileDialog
 )
@@ -47,7 +47,7 @@ class PDFWorker(Worker):
 
     def start_worker(self):
         try:
-            pdf_files = list(self.pdf_dir.glob("*.pdf"))
+            pdf_files = list(self.pdf_dir.glob('*.pdf'))
             total_files = len(pdf_files)
 
             for index, pdf_file in enumerate(pdf_files):
@@ -73,51 +73,51 @@ class PDFWorker(Worker):
                     docx_path = docx_dir / Path(f'{processed_pdf_path.stem}.docx')
                     html_path = certain_html_dir / Path(f'{pdf_file.stem}.html')
 
-                    self.status_updated.emit(f"Обработка {pdf_file.name} (файл {index + 1}/{total_files})")
+                    self.status_updated.emit(f'Обработка {pdf_file.name} (файл {index + 1}/{total_files})')
 
-                    self.status_updated.emit(f"Конвертация PDF в изображения: {pdf_file.name}")
+                    self.status_updated.emit(f'Конвертация PDF в изображения: {pdf_file.name}')
                     pdf_converter = PDFConverter(pdf_file, images_dir, workers=8)
                     pdf_converter.process()
 
                     if not self.is_running:
                         break
 
-                    self.status_updated.emit(f"Обработка изображений: {pdf_file.name}")
+                    self.status_updated.emit(f'Обработка изображений: {pdf_file.name}')
                     extractor = StampsExtractor(images_dir, processed_images_dir, workers=8)
                     extractor.process()
 
                     if not self.is_running:
                         break
 
-                    self.status_updated.emit(f"Создание PDF: {pdf_file.name}")
+                    self.status_updated.emit(f'Создание PDF: {pdf_file.name}')
                     images_converter = ImagesConverter(processed_images_dir, processed_pdf_path)
                     images_converter.process()
 
                     if not self.is_running:
                         break
 
-                    self.status_updated.emit(f"Распознавание текста: {pdf_file.name}")
+                    self.status_updated.emit(f'Распознавание текста: {pdf_file.name}')
                     ocr_processor = OCRProcessor(processed_pdf_path, docx_dir)
                     ocr_processor.process()
 
                     if not self.is_running:
                         break
 
-                    self.status_updated.emit(f"Обработка документа: {pdf_file.name}")
+                    self.status_updated.emit(f'Обработка документа: {pdf_file.name}')
                     document_processor = DocumentProcessor(str(docx_path))
                     document_processor.process()
 
                     if not self.is_running:
                         break
 
-                    self.status_updated.emit(f"Конвертация в HTML: {pdf_file.name}")
+                    self.status_updated.emit(f'Конвертация в HTML: {pdf_file.name}')
                     html_converter = HTMLConverter(docx_path, html_path)
                     html_converter.process()
 
                     if not self.is_running:
                         break
 
-                    self.status_updated.emit(f"Оптимизация HTML: {pdf_file.name}")
+                    self.status_updated.emit(f'Оптимизация HTML: {pdf_file.name}')
                     html_processor = HTMLProcessor(html_path)
                     html_processor.process()
 
@@ -139,7 +139,7 @@ class PDFWorker(Worker):
 
                 except Exception as e:
                     error_details = traceback.format_exc()
-                    self.error_occurred.emit(pdf_file.name, f"{str(e)}\n\n{error_details}")
+                    self.error_occurred.emit(pdf_file.name, f'{str(e)}\n\n{error_details}')
 
                     continue
 
@@ -147,17 +147,19 @@ class PDFWorker(Worker):
 
 
         except Exception:
-            self.error_occurred.emit("Общая ошибка", traceback.format_exc())
+            self.error_occurred.emit('Общая ошибка', traceback.format_exc())
             self.finished_all.emit()
 
 
 class ProcessorWindow(Processor):
     def __init__(self, root, login):
         super().__init__()
+
+        self.root = root
         self.login = login
         self.worker = None
         self.selected_dir = None
-        self.setWindowTitle("PDF Конвертер")
+        self.setWindowTitle('PDF Конвертер')
         
         label_font_path = str(root / r'fonts/Montserrat/static/Montserrat-Medium.ttf')
         label_font = load_font(label_font_path, 13)
@@ -165,30 +167,41 @@ class ProcessorWindow(Processor):
         btn_font_path = str(root / r'fonts/Montserrat/static/Montserrat-Black.ttf')
         btn_font = load_font(btn_font_path, 13)
 
-        self.choose_lbl = QLabel("Выберите директорию с PDF-файлами ОХЛП")
+        self.light_icon = QIcon(str(self.root / 'icons/sun.png'))
+        self.dark_icon = QIcon(str(self.root / 'icons/moon.png'))
+        self.is_light_theme = True
+
+        self.theme_btn = QPushButton()
+        self.theme_btn.setFixedSize(QSize(35, 35))
+        self.theme_btn.setIcon(self.light_icon)
+        self.theme_btn.setIconSize(QSize(25, 25))
+        self.theme_btn.setStyleSheet('background-color: #F5F5F7;')
+        self.theme_btn.clicked.connect(self.change_theme)
+
+        self.choose_lbl = QLabel('Выберите директорию с PDF-файлами ОХЛП')
         self.choose_lbl.setFont(label_font)
         
-        self.choose_btn = QPushButton("Выбрать директорию")
+        self.choose_btn = QPushButton('Выбрать директорию')
         self.choose_btn.setFont(btn_font)
         
-        self.process_btn = QPushButton("Конвертировать файлы")
+        self.process_btn = QPushButton('Конвертировать файлы')
         self.process_btn.setFont(btn_font)
         
-        self.cancel_btn = QPushButton("Отмена")
+        self.cancel_btn = QPushButton('Отмена')
         self.cancel_btn.setFont(btn_font)
         self.cancel_btn.setEnabled(False)
 
-        self.back_btn = QPushButton("Назад")
+        self.back_btn = QPushButton('Назад')
         self.back_btn.setFont(btn_font)
         icon = QIcon('icons/back_icon.png')
         self.back_btn.setIcon(icon)
         self.back_btn.setIconSize(QSize(30, 30))
 
-        self.selected_dir_lbl = QLabel("Директория не выбрана")
+        self.selected_dir_lbl = QLabel('Директория не выбрана')
         self.selected_dir_lbl.setWordWrap(True)
         self.selected_dir_lbl.setFont(label_font)
 
-        self.status_lbl = QLabel("")
+        self.status_lbl = QLabel('')
         self.status_lbl.setWordWrap(True)
         self.status_lbl.setFont(label_font)
 
@@ -197,12 +210,12 @@ class ProcessorWindow(Processor):
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setFont(label_font)
 
-        self.current_file_lbl = QLabel("")
+        self.current_file_lbl = QLabel('')
         self.current_file_lbl.setWordWrap(True)
         self.current_file_lbl.setVisible(False)
         self.current_file_lbl.setFont(label_font)
 
-        self.time_lbl = QLabel("")
+        self.time_lbl = QLabel('')
         self.time_lbl.setVisible(False)
         self.time_lbl.setFont(label_font)
 
@@ -213,10 +226,17 @@ class ProcessorWindow(Processor):
         self.log_text.setFont(label_font)
 
         self.layout = QVBoxLayout(self)
-        self.layout.addWidget(self.choose_lbl)
+
+        greeting_layout = QHBoxLayout()
+        greeting_layout.addWidget(self.choose_lbl)
+        greeting_layout.addWidget(self.theme_btn)
+
+        self.layout.addLayout(greeting_layout)
         self.layout.addWidget(self.choose_btn)
+
         self.layout.addWidget(self.process_btn)
         self.layout.addWidget(self.cancel_btn)
+
         self.layout.addWidget(self.selected_dir_lbl)
         self.layout.addWidget(self.status_lbl)
         self.layout.addWidget(self.progress_bar)
@@ -229,31 +249,46 @@ class ProcessorWindow(Processor):
         self.process_btn.clicked.connect(self.process)
         self.cancel_btn.clicked.connect(self.cancel_processing)
 
+    def change_theme(self) -> None:
+        widget = self
+        if self.is_light_theme:
+            with open(self.root / r'styles/dark.qss', 'r', encoding='utf-8') as f:
+                dark_theme = f.read()
+                widget.setStyleSheet(dark_theme)
+            self.theme_btn.setIcon(self.dark_icon)
+            self.is_light_theme = False
+        else:
+            with open(self.root / r'styles/light.qss', 'r', encoding='utf-8') as f:
+                light_theme = f.read()
+                widget.setStyleSheet(light_theme)
+            self.theme_btn.setIcon(self.light_icon)
+            self.is_light_theme = True
+
     @Slot()
     def choose_dir(self):
         dir_path = QFileDialog.getExistingDirectory(
             self,
-            "Выберите директорию с PDF-файлами",
-            "",
+            'Выберите директорию с PDF-файлами',
+            '',
             QFileDialog.ShowDirsOnly
         )
 
         if dir_path:
             self.selected_dir = dir_path
-            self.selected_dir_lbl.setText(f"Выбрана директория: {dir_path}")
+            self.selected_dir_lbl.setText(f'Выбрана директория: {dir_path}')
 
             pdf_files = self.get_pdf_files(dir_path)
 
             if pdf_files:
-                self.status_lbl.setText(f"Найдено PDF-файлов: {len(pdf_files)}")
-                self.status_lbl.setStyleSheet("color: green;")
+                self.status_lbl.setText(f'Найдено PDF-файлов: {len(pdf_files)}')
+                self.status_lbl.setStyleSheet('color: green;')
             else:
-                self.status_lbl.setText("В выбранной директории нет PDF-файлов!")
-                self.status_lbl.setStyleSheet("color: red;")
+                self.status_lbl.setText('В выбранной директории нет PDF-файлов!')
+                self.status_lbl.setStyleSheet('color: red;')
 
     def log_message(self, message):
-        timestamp = time.strftime("%H:%M:%S")
-        self.log_text.append(f"[{timestamp}] {message}")
+        timestamp = time.strftime('%H:%M:%S')
+        self.log_text.append(f'[{timestamp}] {message}')
 
         self.log_text.verticalScrollBar().setValue(
             self.log_text.verticalScrollBar().maximum()
@@ -262,16 +297,16 @@ class ProcessorWindow(Processor):
     @Slot()
     def process(self):
         if not self.selected_dir:
-            self.status_lbl.setText("Сначала выберите директорию!")
-            self.status_lbl.setStyleSheet("color: red;")
+            self.status_lbl.setText('Сначала выберите директорию!')
+            self.status_lbl.setStyleSheet('color: red;')
             return
 
         pdf_dir = Path(self.selected_dir)
-        pdf_files = list(pdf_dir.glob("*.pdf"))
+        pdf_files = list(pdf_dir.glob('*.pdf'))
 
         if not pdf_files:
-            self.status_lbl.setText("В выбранной директории нет PDF-файлов!")
-            self.status_lbl.setStyleSheet("color: red;")
+            self.status_lbl.setText('В выбранной директории нет PDF-файлов!')
+            self.status_lbl.setStyleSheet('color: red;')
             return
 
         self.log_text.clear()
@@ -294,8 +329,8 @@ class ProcessorWindow(Processor):
         self.worker.error_occurred.connect(self.error)
         self.worker.finished_all.connect(self.processing_finished)
 
-        self.log_message("Начало обработки...")
-        self.log_message(f"Найдено файлов для обработки: {len(pdf_files)}")
+        self.log_message('Начало обработки...')
+        self.log_message(f'Найдено файлов для обработки: {len(pdf_files)}')
         self.worker.start()
 
     @Slot()
@@ -303,9 +338,9 @@ class ProcessorWindow(Processor):
         if self.worker and self.worker.isRunning():
             self.worker.stop_worker()
             self.cancel_btn.setEnabled(False)
-            self.status_lbl.setText("Отмена обработки...")
-            self.status_lbl.setStyleSheet("color: orange;")
-            self.log_message("Пользователь запросил отмену обработки")
+            self.status_lbl.setText('Отмена обработки...')
+            self.status_lbl.setStyleSheet('color: orange;')
+            self.log_message('Пользователь запросил отмену обработки')
 
     @Slot(int)
     def update_progress(self, value):
@@ -314,27 +349,27 @@ class ProcessorWindow(Processor):
     @Slot(str)
     def update_status(self, status):
         self.status_lbl.setText(status)
-        self.current_file_lbl.setText(f"Текущая операция: {status}")
+        self.current_file_lbl.setText(f'Текущая операция: {status}')
         self.log_message(status)
 
     @Slot(str, float)
     def file_processed(self, filename, elapsed_time):
-        time_str = f"{elapsed_time:.2f} сек."
+        time_str = f'{elapsed_time:.2f} сек.'
         if elapsed_time > 60:
             minutes = int(elapsed_time // 60)
             seconds = elapsed_time % 60
-            time_str = f"{minutes} мин. {seconds:.2f} сек."
+            time_str = f'{minutes} мин. {seconds:.2f} сек.'
 
-        self.time_lbl.setText(f"Последний файл: {filename} - {time_str}")
-        self.log_message(f"Файл {filename} обработан за {time_str}")
+        self.time_lbl.setText(f'Последний файл: {filename} - {time_str}')
+        self.log_message(f'Файл {filename} обработан за {time_str}')
 
     @Slot(str, str)
     def error(self, filename, error_details):
-        error_message = f"Ошибка при обработке {filename}"
+        error_message = f'Ошибка при обработке {filename}'
         self.status_lbl.setText(error_message)
-        self.status_lbl.setStyleSheet("color: red;")
-        self.log_message(f"{error_message}")
-        self.log_message(f"Детали ошибки:\n{error_details}")
+        self.status_lbl.setStyleSheet('color: red;')
+        self.log_message(f'{error_message}')
+        self.log_message(f'Детали ошибки:\n{error_details}')
 
     @Slot()
     def processing_finished(self):
@@ -347,17 +382,17 @@ class ProcessorWindow(Processor):
             self.worker.wait()
 
         self.progress_bar.setValue(100)
-        self.status_lbl.setText("Обработка завершена!")
-        self.status_lbl.setStyleSheet("color: green;")
-        self.current_file_lbl.setText("Все файлы обработаны")
-        self.log_message("=== ОБРАБОТКА ЗАВЕРШЕНА ===")
+        self.status_lbl.setText('Обработка завершена!')
+        self.status_lbl.setStyleSheet('color: green;')
+        self.current_file_lbl.setText('Все файлы обработаны')
+        self.log_message('=== ОБРАБОТКА ЗАВЕРШЕНА ===')
 
     def close_event(self, event):
         if self.worker and self.worker.isRunning():
             reply = QMessageBox.question(
                 self,
-                "Подтверждение",
-                "Обработка еще не завершена. Вы уверены, что хотите выйти?",
+                'Подтверждение',
+                'Обработка еще не завершена. Вы уверены, что хотите выйти?',
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No
             )
@@ -379,6 +414,6 @@ class ProcessorWindow(Processor):
                 if file.lower().endswith('.pdf'):
                     pdf_files.append(file)
         except Exception as e:
-            self.log_message(f"Ошибка при чтении директории: {e}")
+            self.log_message(f'Ошибка при чтении директории: {e}')
 
         return pdf_files

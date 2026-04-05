@@ -1,19 +1,19 @@
 import os
-import sys
 from pathlib import Path
 import time
 import traceback
 
 from PySide6.QtWidgets import (
-    QWidget, QLabel, QVBoxLayout,
+    QLabel, QVBoxLayout, QHBoxLayout,
     QPushButton, QTextEdit,
-    QMessageBox, QProgressBar, QFileDialog, QApplication
+    QMessageBox, QProgressBar, QFileDialog
 )
-from PySide6.QtCore import Signal, QThread, Slot, QSize
+from PySide6.QtCore import Signal, Slot, QSize
 from PySide6.QtGui import QIcon
 
 from src.auth.load_fonts import load_font
 from src.db.database import Database
+from src.db.init_db import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
 from src.structurer.structurer import Structurer
 
 from src.interfaces import Worker, Processor
@@ -29,10 +29,10 @@ class DBWorker(Worker):
         super().__init__(html_dir, login)
         self.html_dir = html_dir
         self.db = Database(
-            dbname="rls",
-            user="postgres",
-            password="postgres",
-            host="localhost"
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST
         )
         self.login = login
         self.is_running = True
@@ -42,14 +42,14 @@ class DBWorker(Worker):
 
     def start_worker(self):
         try:
-            html_files = list(self.html_dir.glob("*.html"))
+            html_files = list(self.html_dir.glob('*.html'))
             total_files = len(html_files)
 
             try:
                 user_id = self.db.select_user_id(self.login)
             except:
-                self.error_occurred.emit("Ошибка авторизации",
-                                         f"Не удалось найти пользователя {self.login} в базе данных")
+                self.error_occurred.emit('Ошибка авторизации',
+                                         f'Не удалось найти пользователя {self.login} в базе данных')
                 self.finished_all.emit()
                 return
 
@@ -61,7 +61,7 @@ class DBWorker(Worker):
                 try:
                     start_time = time.time()
 
-                    self.status_updated.emit(f"Извлечение полей {html_file_name} (файл {index + 1}/{total_files})")
+                    self.status_updated.emit(f'Извлечение полей {html_file_name} (файл {index + 1}/{total_files})')
                     db_worker = Structurer(html_file)
 
                     h2_content = db_worker.structure_content('h2')
@@ -85,21 +85,34 @@ class DBWorker(Worker):
 
                 except Exception as e:
                     error_details = traceback.format_exc()
-                    self.error_occurred.emit(html_file_name, f"{str(e)}\n\n{error_details}")
+                    self.error_occurred.emit(html_file_name, f'{str(e)}\n\n{error_details}')
 
                     continue
             self.finished_all.emit()
 
         except Exception:
-            self.error_occurred.emit("Общая ошибка", traceback.format_exc())
+            self.error_occurred.emit('Общая ошибка', traceback.format_exc())
             self.finished_all.emit()
 
 class DBWorkWindow(Processor):
     def __init__(self, root, login):
         super().__init__()
+
+        self.root = root
         self.login = login
         self.worker = None
-        self.setWindowTitle("Система для работы с ОХЛП")
+        self.setWindowTitle('Система для работы с ОХЛП')
+
+        self.light_icon = QIcon(str(self.root / 'icons/sun.png'))
+        self.dark_icon = QIcon(str(self.root / 'icons/moon.png'))
+        self.is_light_theme = True
+
+        self.theme_btn = QPushButton()
+        self.theme_btn.setFixedSize(QSize(35, 35))
+        self.theme_btn.setIcon(self.light_icon)
+        self.theme_btn.setIconSize(QSize(25, 25))
+        self.theme_btn.setStyleSheet('background-color: #F5F5F7;')
+        self.theme_btn.clicked.connect(self.change_theme)
 
         label_font_path = str(root / r'fonts/Montserrat/static/Montserrat-Medium.ttf')
         label_font = load_font(label_font_path, 13)
@@ -107,30 +120,30 @@ class DBWorkWindow(Processor):
         btn_font_path = str(root / r'fonts/Montserrat/static/Montserrat-Black.ttf')
         btn_font = load_font(btn_font_path, 13)
 
-        self.choose_lbl = QLabel("Выберите директорию со структурированными файлами ОХЛП")
+        self.choose_lbl = QLabel('Выберите директорию со структурированными файлами ОХЛП')
         self.choose_lbl.setFont(label_font)
 
-        self.choose_btn = QPushButton("Выбрать директорию")
+        self.choose_btn = QPushButton('Выбрать директорию')
         self.choose_btn.setFont(btn_font)
 
-        self.process_btn = QPushButton("Извлечь сущности в базу данных")
+        self.process_btn = QPushButton('Извлечь сущности в базу данных')
         self.process_btn.setFont(btn_font)
 
-        self.cancel_btn = QPushButton("Отмена")
+        self.cancel_btn = QPushButton('Отмена')
         self.cancel_btn.setFont(btn_font)
         self.cancel_btn.setEnabled(False)
 
-        self.back_btn = QPushButton("Назад")
+        self.back_btn = QPushButton('Назад')
         self.back_btn.setFont(btn_font)
         icon = QIcon('icons/back_icon.png')
         self.back_btn.setIcon(icon)
         self.back_btn.setIconSize(QSize(30, 30))
 
-        self.selected_dir_lbl = QLabel("Директория не выбрана")
+        self.selected_dir_lbl = QLabel('Директория не выбрана')
         self.selected_dir_lbl.setWordWrap(True)
         self.selected_dir_lbl.setFont(label_font)
 
-        self.status_lbl = QLabel("")
+        self.status_lbl = QLabel('')
         self.status_lbl.setWordWrap(True)
         self.status_lbl.setFont(label_font)
 
@@ -139,12 +152,12 @@ class DBWorkWindow(Processor):
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setFont(label_font)
 
-        self.current_file_lbl = QLabel("")
+        self.current_file_lbl = QLabel('')
         self.current_file_lbl.setWordWrap(True)
         self.current_file_lbl.setVisible(False)
         self.current_file_lbl.setFont(label_font)
 
-        self.time_lbl = QLabel("")
+        self.time_lbl = QLabel('')
         self.time_lbl.setVisible(False)
         self.time_lbl.setFont(label_font)
 
@@ -155,7 +168,13 @@ class DBWorkWindow(Processor):
         self.log_text.setFont(label_font)
 
         self.layout = QVBoxLayout(self)
-        self.layout.addWidget(self.choose_lbl)
+
+        greeting_layout = QHBoxLayout()
+        greeting_layout.addWidget(self.choose_lbl)
+        greeting_layout.addWidget(self.theme_btn)
+
+        self.layout.addLayout(greeting_layout)
+
         self.layout.addWidget(self.choose_btn)
         self.layout.addWidget(self.process_btn)
         self.layout.addWidget(self.cancel_btn)
@@ -171,36 +190,51 @@ class DBWorkWindow(Processor):
         self.process_btn.clicked.connect(self.process)
         self.cancel_btn.clicked.connect(self.cancel_processing)
 
+    def change_theme(self) -> None:
+        widget = self
+        if self.is_light_theme:
+            with open(self.root / r'styles/dark.qss', 'r', encoding='utf-8') as f:
+                dark_theme = f.read()
+                widget.setStyleSheet(dark_theme)
+            self.theme_btn.setIcon(self.dark_icon)
+            self.is_light_theme = False
+        else:
+            with open(self.root / r'styles/light.qss', 'r', encoding='utf-8') as f:
+                light_theme = f.read()
+                widget.setStyleSheet(light_theme)
+            self.theme_btn.setIcon(self.light_icon)
+            self.is_light_theme = True
+
     @Slot()
     def choose_dir(self):
         self.dir_path = QFileDialog.getExistingDirectory(
             self,
-            "Выберите директорию с HTML-файлами",
-            "",
+            'Выберите директорию с HTML-файлами',
+            '',
             QFileDialog.ShowDirsOnly
         )
 
         if self.dir_path:
             self.selected_dir = self.dir_path
-            self.selected_dir_lbl.setText(f"Выбрана директория: {self.dir_path}")
+            self.selected_dir_lbl.setText(f'Выбрана директория: {self.dir_path}')
 
             pdf_files = self.get_files()
 
             if pdf_files:
-                self.status_lbl.setText(f"Найдено HTML-файлов: {len(pdf_files)}")
-                self.status_lbl.setStyleSheet("color: green;")
+                self.status_lbl.setText(f'Найдено HTML-файлов: {len(pdf_files)}')
+                self.status_lbl.setStyleSheet('color: green;')
             else:
-                self.status_lbl.setText("В выбранной директории нет HTML-файлов!")
-                self.status_lbl.setStyleSheet("color: red;")
+                self.status_lbl.setText('В выбранной директории нет HTML-файлов!')
+                self.status_lbl.setStyleSheet('color: red;')
 
     @Slot()
     def cancel_processing(self):
         if self.worker and self.worker.isRunning():
             self.worker.stop_worker()
             self.cancel_btn.setEnabled(False)
-            self.status_lbl.setText("Отмена обработки...")
-            self.status_lbl.setStyleSheet("color: orange;")
-            self.log_message("Пользователь запросил отмену обработки")
+            self.status_lbl.setText('Отмена обработки...')
+            self.status_lbl.setStyleSheet('color: orange;')
+            self.log_message('Пользователь запросил отмену обработки')
 
     @Slot(int)
     def update_progress(self, value):
@@ -209,27 +243,27 @@ class DBWorkWindow(Processor):
     @Slot(str)
     def update_status(self, status):
         self.status_lbl.setText(status)
-        self.current_file_lbl.setText(f"Текущая операция: {status}")
+        self.current_file_lbl.setText(f'Текущая операция: {status}')
         self.log_message(status)
 
     @Slot(str, float)
     def file_processed(self, filename, elapsed_time):
-        time_str = f"{elapsed_time:.2f} сек."
+        time_str = f'{elapsed_time:.2f} сек.'
         if elapsed_time > 60:
             minutes = int(elapsed_time // 60)
             seconds = elapsed_time % 60
-            time_str = f"{minutes} мин. {seconds:.2f} сек."
+            time_str = f'{minutes} мин. {seconds:.2f} сек.'
 
-        self.time_lbl.setText(f"Последний файл: {filename} - {time_str}")
-        self.log_message(f"Файл {filename} обработан за {time_str}")
+        self.time_lbl.setText(f'Последний файл: {filename} - {time_str}')
+        self.log_message(f'Файл {filename} обработан за {time_str}')
 
     @Slot(str, str)
     def error(self, filename, error_details):
-        error_message = f"Ошибка при обработке {filename}"
+        error_message = f'Ошибка при обработке {filename}'
         self.status_lbl.setText(error_message)
-        self.status_lbl.setStyleSheet("color: red;")
-        self.log_message(f"{error_message}")
-        self.log_message(f"Детали ошибки:\n{error_details}")
+        self.status_lbl.setStyleSheet('color: red;')
+        self.log_message(f'{error_message}')
+        self.log_message(f'Детали ошибки:\n{error_details}')
 
     @Slot()
     def processing_finished(self):
@@ -242,17 +276,17 @@ class DBWorkWindow(Processor):
             self.worker.wait()
 
         self.progress_bar.setValue(100)
-        self.status_lbl.setText("Обработка завершена!")
-        self.status_lbl.setStyleSheet("color: green;")
-        self.current_file_lbl.setText("Все файлы обработаны")
-        self.log_message("=== ОБРАБОТКА ЗАВЕРШЕНА ===")
+        self.status_lbl.setText('Обработка завершена!')
+        self.status_lbl.setStyleSheet('color: green;')
+        self.current_file_lbl.setText('Все файлы обработаны')
+        self.log_message('=== ОБРАБОТКА ЗАВЕРШЕНА ===')
 
     def close_event(self, event):
         if self.worker and self.worker.isRunning():
             reply = QMessageBox.question(
                 self,
-                "Подтверждение",
-                "Обработка еще не завершена. Вы уверены, что хотите выйти?",
+                'Подтверждение',
+                'Обработка еще не завершена. Вы уверены, что хотите выйти?',
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No
             )
@@ -274,13 +308,13 @@ class DBWorkWindow(Processor):
                 if file.lower().endswith('.html'):
                     html_files.append(file)
         except Exception as e:
-            self.log_message(f"Ошибка при чтении директории: {e}")
+            self.log_message(f'Ошибка при чтении директории: {e}')
 
         return html_files
 
     def log_message(self, message):
-        timestamp = time.strftime("%H:%M:%S")
-        self.log_text.append(f"[{timestamp}] {message}")
+        timestamp = time.strftime('%H:%M:%S')
+        self.log_text.append(f'[{timestamp}] {message}')
 
         self.log_text.verticalScrollBar().setValue(
             self.log_text.verticalScrollBar().maximum()
@@ -288,16 +322,16 @@ class DBWorkWindow(Processor):
 
     def process(self):
         if not self.selected_dir:
-            self.status_lbl.setText("Сначала выберите директорию!")
-            self.status_lbl.setStyleSheet("color: red;")
+            self.status_lbl.setText('Сначала выберите директорию!')
+            self.status_lbl.setStyleSheet('color: red;')
             return
 
         html_dir = Path(self.selected_dir)
-        html_files = list(html_dir.glob("*.html"))
+        html_files = list(html_dir.glob('*.html'))
 
         if not html_files:
-            self.status_lbl.setText("В выбранной директории нет PDF-файлов!")
-            self.status_lbl.setStyleSheet("color: red;")
+            self.status_lbl.setText('В выбранной директории нет PDF-файлов!')
+            self.status_lbl.setStyleSheet('color: red;')
             return
 
         self.log_text.clear()
@@ -311,6 +345,6 @@ class DBWorkWindow(Processor):
         self.worker.error_occurred.connect(self.error)
         self.worker.finished_all.connect(self.processing_finished)
 
-        self.log_message("Начало обработки...")
-        self.log_message(f"Найдено файлов для обработки: {len(html_files)}")
+        self.log_message('Начало обработки...')
+        self.log_message(f'Найдено файлов для обработки: {len(html_files)}')
         self.worker.start_worker()

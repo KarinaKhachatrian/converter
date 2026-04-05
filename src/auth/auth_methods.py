@@ -1,6 +1,7 @@
 import re
 from src.auth.regex import email_regex
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox, QLineEdit, QPushButton
+from PySide6.QtGui import QIcon, QFont
 
 class AuthMethods:
     @staticmethod
@@ -39,3 +40,19 @@ class AuthMethods:
             "Информация",
             message_text
         )
+
+    @staticmethod
+    def toggle_password_visibility(password_btn: QPushButton,
+                                   password_field: QLineEdit,
+                                   open_icon_path: QIcon,
+                                   close_icon_path: QIcon,
+                                   font: QFont) -> None:
+
+        if password_field.echoMode() == QLineEdit.EchoMode.Password:
+            password_btn.setIcon(close_icon_path)
+            password_field.setEchoMode(QLineEdit.EchoMode.Normal)
+            password_field.setFont(font)
+        else:
+            password_btn.setIcon(open_icon_path)
+            password_field.setEchoMode(QLineEdit.EchoMode.Password)
+
