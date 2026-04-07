@@ -1,9 +1,12 @@
 import re
-from src.auth.regex import email_regex
+
 from PySide6.QtWidgets import QMessageBox, QLineEdit, QPushButton
 from PySide6.QtGui import QIcon, QFont
 
-class AuthMethods:
+from src.auth.regex import email_regex
+
+
+class Auth:
     @staticmethod
     def empty_field_check(field_text: str) -> bool:
         if field_text == '' or field_text.isspace():

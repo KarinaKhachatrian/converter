@@ -81,27 +81,27 @@ class Database:
         (%s, %s);""", (user_id, department_id))
         self.conn.commit()
 
-    def select_departments(self):
+    def select_departments(self) -> list:
         self.cur.execute("""SELECT department_name FROM departments;""")
         return [row[0] for row in self.cur.fetchall()]
 
-    def select_department_id(self, department_name):
+    def select_department_id(self, department_name) -> str:
         self.cur.execute("""SELECT department_id FROM departments WHERE department_name = %s;""", (department_name,))
         return self.cur.fetchone()[0]
 
-    def select_user_id(self, email):
+    def select_user_id(self, email) -> str:
         self.cur.execute("""SELECT user_id FROM users WHERE email = %s;""", (email,))
         return self.cur.fetchone()[0]
 
-    def select_second_content_id(self, second_header):
+    def select_second_content_id(self, second_header) -> str:
         self.cur.execute("""SELECT second_content_id FROM second_level_contents WHERE second_header = %s;""", (second_header,))
         return self.cur.fetchone()[0]
 
-    def select_third_content_id(self, third_header):
+    def select_third_content_id(self, third_header) -> str:
         self.cur.execute("""SELECT third_content_id FROM third_level_contents WHERE third_header = %s;""", (third_header,))
         return self.cur.fetchone()[0]
 
-    def select_filenames(self, user_id):
+    def select_filenames(self, user_id) -> list:
         self.cur.execute("""SELECT DISTINCT sc.filename 
                         FROM second_level_contents AS sc
                         JOIN users_second_level_content AS usc
@@ -109,31 +109,31 @@ class Database:
                         WHERE usc.user_id = %s;""", (user_id,))
         return [row[0].strip() for row in self.cur.fetchall()]
 
-    def select_second_level_headers(self, filename):
+    def select_second_level_headers(self, filename) -> list:
         self.cur.execute("""SELECT second_header 
                         FROM second_level_contents
                         WHERE filename = %s;""", (filename,))
         return [row[0].strip() for row in self.cur.fetchall()]
 
-    def select_third_level_headers(self, filename):
+    def select_third_level_headers(self, filename) -> list:
         self.cur.execute("""SELECT third_header 
                         FROM third_level_contents
                         WHERE filename = %s;""", (filename,))
         return [row[0].strip() for row in self.cur.fetchall()]
 
-    def select_second_level_content(self, second_header, filename):
+    def select_second_level_content(self, second_header, filename) -> str:
         self.cur.execute("""SELECT content FROM second_level_contents
                         WHERE second_header = %s 
                         AND filename = %s;""", (second_header, filename,))
         return self.cur.fetchone()[0]
 
-    def select_third_level_content(self, third_header, filename):
+    def select_third_level_content(self, third_header, filename) -> str:
         self.cur.execute("""SELECT content FROM third_level_contents
                         WHERE third_header = %s 
                         AND filename = %s;""", (third_header, filename,))
         return self.cur.fetchone()[0]
 
-    def select_username(self, email):
+    def select_username(self, email) -> str:
         self.cur.execute("""SELECT firstname FROM users WHERE email = %s;""", (email,))
         return self.cur.fetchone()[0]
 

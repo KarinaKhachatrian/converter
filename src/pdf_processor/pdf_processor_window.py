@@ -83,7 +83,7 @@ class PDFWorker(Worker):
                         break
 
                     self.status_updated.emit(f'Обработка изображений: {pdf_file.name}')
-                    extractor = StampsExtractor(images_dir, processed_images_dir, workers=8)
+                    extractor = StampsExtractor(images_dir, processed_images_dir)
                     extractor.process()
 
                     if not self.is_running:

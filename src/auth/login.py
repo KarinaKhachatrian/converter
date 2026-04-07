@@ -8,7 +8,7 @@ from src.db.init_db import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
 from src.auth.hash_password import hash_password
 from src.auth.load_fonts import load_font
 
-from src.auth.auth_methods import AuthMethods
+from src.auth.auth_methods import Auth
 
 
 class LoginWindow(QWidget):
@@ -27,7 +27,7 @@ class LoginWindow(QWidget):
 
         self.root = root
         self.register_window = register_window
-        self.auth_methods = AuthMethods()
+        self.auth_methods = Auth()
 
         self.open_eye_icon = QIcon(str(self.root / 'icons/open_eye.png'))
         self.close_eye_icon = QIcon(str(self.root / 'icons/close_eye.png'))

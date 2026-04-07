@@ -9,7 +9,7 @@ from src.db.exec_select import departments
 from src.auth.hash_password import hash_password
 from src.auth.load_fonts import load_font
 
-from src.auth.auth_methods import AuthMethods
+from src.auth.auth_methods import Auth
 
 
 class RegisterWindow(QWidget):
@@ -28,7 +28,7 @@ class RegisterWindow(QWidget):
 
         self.root = root
         self.login_window = login_window
-        self.auth_methods = AuthMethods()
+        self.auth_methods = Auth()
 
         self.open_eye_icon = QIcon(str(self.root / 'icons/open_eye.png'))
         self.close_eye_icon = QIcon(str(self.root / 'icons/close_eye.png'))
