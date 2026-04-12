@@ -154,4 +154,3 @@ class LoginWindow(QWidget):
 
         self.login_user()
 
-

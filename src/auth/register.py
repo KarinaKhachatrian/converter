@@ -235,3 +235,4 @@ class RegisterWindow(QWidget):
             return
 
         self.register_user()
+
