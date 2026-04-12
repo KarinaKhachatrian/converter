@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt, QSize
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
 from PySide6.QtGui import QIcon
 
-from src.auth.load_fonts import load_font
+from src.window_methods import load_font
 
 
 class AccountWindow(QWidget):

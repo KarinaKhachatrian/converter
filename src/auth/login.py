@@ -6,7 +6,7 @@ from src.db.database import Database
 from src.db.init_db import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
 
 from src.auth.hash_password import hash_password
-from src.auth.load_fonts import load_font
+from src.window_methods import load_font
 
 from src.auth.auth_methods import Auth
 
@@ -130,27 +130,28 @@ class LoginWindow(QWidget):
             self.theme_btn.setIcon(self.light_icon)
             self.is_light_theme = True
 
+    def check_not_empty(self):
+        return all([
+            self.email_field.text(),
+            self.password_field.text(),
+        ])
+
+    def login_user(self):
+        self.auth_methods.show_message('Аутентификация прошла успешно!')
+        self.login_successful.emit()
+
     @Slot()
     def login(self) -> None:
         email = self.email_field.text()
         password = self.password_field.text()
 
-        if not (self.auth_methods.empty_field_check(email) and
-                self.auth_methods.empty_field_check(password)):
-
-            if not(self.auth_methods.len_field_check(email) and
-                self.auth_methods.len_field_check(password)):
-
-                if self.db.check_credentials(email, hash_password(password)):
-                    self.auth_methods.show_message('Аутентификация прошла успешно!')
-                    self.login_successful.emit()
-                else:
-                    self.auth_methods.show_warning('Неверный логин или пароль')
-            else:
-                self.auth_methods.show_warning('Введённые данные не могут быть короче 1 символа')
-        else:
+        if not self.check_not_empty():
             self.auth_methods.show_warning('Заполните все поля')
+            return
 
-    def get_email(self) -> str:
-        return self.email_field.text()
+        if not self.db.check_credentials(email, hash_password(password)):
+            self.auth_methods.show_warning('Неверный логин или пароль')
+
+        self.login_user()
+
 

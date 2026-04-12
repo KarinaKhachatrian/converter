@@ -23,7 +23,7 @@ from src.pdf_processor.tables_fixer import TablesFixer
 from src.pdf_processor.wrapper import Wrapper
 from src.interfaces import Worker, Processor
 
-from src.auth.load_fonts import load_font
+from src.window_methods import load_font
 
 
 class PDFWorker(Worker):

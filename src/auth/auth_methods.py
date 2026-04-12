@@ -9,13 +9,7 @@ from src.auth.regex import email_regex
 class Auth:
     @staticmethod
     def empty_field_check(field_text: str) -> bool:
-        if field_text == '' or field_text.isspace():
-            return True
-        return False
-
-    @staticmethod
-    def len_field_check(field_text: str) -> bool:
-        if len(field_text) <= 1:
+        if field_text == '' or field_text.isspace() or len(field_text) <= 1:
             return True
         return False
 

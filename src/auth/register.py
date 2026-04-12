@@ -7,7 +7,7 @@ from src.db.init_db import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
 from src.db.exec_select import departments
 
 from src.auth.hash_password import hash_password
-from src.auth.load_fonts import load_font
+from src.window_methods import load_font
 
 from src.auth.auth_methods import Auth
 
@@ -186,49 +186,52 @@ class RegisterWindow(QWidget):
             self.theme_btn.setIcon(self.light_icon)
             self.is_light_theme = True
 
+    def check_not_empty(self):
+        return all([
+            self.lastname_field.text(),
+            self.firstname_field.text(),
+            self.email_field.text(),
+            self.password_field.text(),
+            self.confirm_password_field.text()
+        ])
 
-    @Slot()
-    def register(self) -> None:
+    def register_user(self):
         lastname = self.lastname_field.text()
         firstname = self.firstname_field.text()
         patronymic = self.patronymic_field.text()
         email = self.email_field.text()
         department = self.department_combo.currentText()
         password = self.password_field.text()
+
+        hashed_password = hash_password(password)
+        self.db.insert_users(lastname, firstname, patronymic, email, hashed_password)
+
+        department_id = self.db.select_department_id(department)
+        user_id = self.db.select_user_id(email)
+        self.db.insert_users_departments(user_id, department_id)
+
+        self.auth_methods.show_message('Регистрация прошла успешно!')
+        self.registration_successful.emit()
+
+    def register(self):
+        email = self.email_field.text()
+        password = self.password_field.text()
         confirm_password = self.confirm_password_field.text()
 
-        if not self.db.check_user_exists(email):
-            if not (self.auth_methods.empty_field_check(lastname) or
-                    self.auth_methods.empty_field_check(firstname) or
-                    self.auth_methods.empty_field_check(email) or
-                    self.auth_methods.empty_field_check(password) or
-                    self.auth_methods.empty_field_check(confirm_password)):
-
-                if not (self.auth_methods.len_field_check(lastname) or
-                        self.auth_methods.len_field_check(firstname) or
-                        self.auth_methods.len_field_check(email) or
-                        self.auth_methods.len_field_check(password) or
-                        self.auth_methods.len_field_check(confirm_password)):
-
-                    if self.auth_methods.email_check(email):
-                        if password == confirm_password:
-                            hashed_password = hash_password(password)
-                            self.db.insert_users(lastname, firstname, patronymic, email, hashed_password)
-
-                            department_id = self.db.select_department_id(department)
-                            user_id = self.db.select_user_id(email)
-                            self.db.insert_users_departments(user_id, department_id)
-
-                            self.auth_methods.show_message('Регистрация прошла успешно!')
-
-                            self.registration_successful.emit()
-                        else:
-                            self.auth_methods.show_warning('Пароли не совпадают')
-                    else:
-                        self.auth_methods.show_warning('Неверный формат электронной почты')
-                else:
-                    self.auth_methods.show_warning('Введённые данные не могут быть короче 1 символа')
-            else:
-                self.auth_methods.show_warning('Заполните все поля')
-        else:
+        if self.db.check_user_exists(email):
             self.auth_methods.show_warning('Пользователь уже существует')
+            return
+
+        if not self.check_not_empty():
+            self.auth_methods.show_warning('Заполните все поля')
+            return
+
+        if not self.auth_methods.email_check(email):
+            self.auth_methods.show_warning('Неверный формат электронной почты')
+            return
+
+        if password != confirm_password:
+            self.auth_methods.show_warning('Пароли не совпадают')
+            return
+
+        self.register_user()

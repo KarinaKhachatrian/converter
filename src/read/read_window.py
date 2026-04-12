@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton, QPlainTextEdit
 
-from src.auth.load_fonts import load_font
+from src.window_methods import load_font
 from src.db.database import Database
 from src.db.init_db import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
 
