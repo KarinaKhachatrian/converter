@@ -218,10 +218,10 @@ class DBWorkWindow(Processor):
             self.selected_dir = self.dir_path
             self.selected_dir_lbl.setText(f'Выбрана директория: {self.dir_path}')
 
-            pdf_files = self.get_files()
+            html_files = self.get_files()
 
-            if pdf_files:
-                self.status_lbl.setText(f'Найдено HTML-файлов: {len(pdf_files)}')
+            if html_files:
+                self.status_lbl.setText(f'Найдено HTML-файлов: {len(html_files)}')
                 self.status_lbl.setStyleSheet('color: green;')
             else:
                 self.status_lbl.setText('В выбранной директории нет HTML-файлов!')
@@ -330,7 +330,7 @@ class DBWorkWindow(Processor):
         html_files = list(html_dir.glob('*.html'))
 
         if not html_files:
-            self.status_lbl.setText('В выбранной директории нет PDF-файлов!')
+            self.status_lbl.setText('В выбранной директории нет HTML-файлов!')
             self.status_lbl.setStyleSheet('color: red;')
             return
 
