@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 
 from src.pdf_processor.processor import Processor
 
+
 class TablesFixer(Processor):
     @staticmethod
     def read_lines(filepath: Path) -> list:
@@ -11,12 +12,12 @@ class TablesFixer(Processor):
         return lines
 
     @staticmethod
-    def write_content(filepath: Path, content: str) -> None:
+    def write_content(filepath: Path, content: str):
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(content)
 
     @classmethod
-    def finalize(cls, html_path: Path, parser='html.parser') -> None:
+    def finalize(cls, html_path: Path, parser='html.parser'):
         lines = cls.read_lines(html_path)
 
         for i in range(len(lines) - 1):

@@ -53,11 +53,11 @@ class HTMLConverter(Processor):
         return content
 
     @staticmethod
-    def write_content(filepath: Path, content: str) -> None:
+    def write_content(filepath: Path, content: str):
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(content)
 
-    def process(self) -> None:
+    def process(self):
         cmd = [
             'pandoc',
             os.path.abspath(self.docx_path),

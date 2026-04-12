@@ -126,7 +126,7 @@ class ReadWindow(QWidget):
 
         self.layout.addWidget(self.back_btn)
 
-    def change_theme(self) -> None:
+    def change_theme(self):
         widget = self
         if self.is_light_theme:
             with open(self.root / r'styles/dark.qss', 'r', encoding='utf-8') as f:

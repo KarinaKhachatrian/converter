@@ -5,11 +5,11 @@ from abc import ABC, abstractmethod
 
 class Processor(ABC):
     @abstractmethod
-    def process(self) -> None:
+    def process(self):
         """Запуск процесса обработки файлов"""
 
     @classmethod
-    def finalize(cls, html_path: Path, parser='html.parser') -> None:
+    def finalize(cls, html_path: Path, parser='html.parser'):
         """Доработка html-разметки"""
 
     @staticmethod
@@ -27,7 +27,7 @@ class Processor(ABC):
         return lines
 
     @staticmethod
-    def write_content(filepath: Path, content: str) -> None:
+    def write_content(filepath: Path, content: str):
         """Запись строчного содержимого"""
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(content)

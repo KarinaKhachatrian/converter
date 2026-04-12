@@ -190,7 +190,7 @@ class DBWorkWindow(Processor):
         self.process_btn.clicked.connect(self.process)
         self.cancel_btn.clicked.connect(self.cancel_processing)
 
-    def change_theme(self) -> None:
+    def change_theme(self):
         widget = self
         if self.is_light_theme:
             with open(self.root / r'styles/dark.qss', 'r', encoding='utf-8') as f:

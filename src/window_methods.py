@@ -1,10 +1,10 @@
 from PySide6.QtWidgets import QWidget
 from PySide6.QtGui import QFont, QFontDatabase
 
-def show_window(window: QWidget) -> None:
+def show_window(window: QWidget):
     window.show()
 
-def switch_window(current_window: QWidget, change_window: QWidget) -> None:
+def switch_window(current_window: QWidget, change_window: QWidget):
     change_window.show()
     current_window.close()
 

@@ -17,7 +17,7 @@ class ImagesConverter(Processor):
         with open(filepath, 'wb') as f:
             f.write(content)
 
-    def process(self) -> None:
+    def process(self):
         image_files = []
         for filename in natsorted(os.listdir(self.images_dir)):
             if filename.lower().endswith('.png'):

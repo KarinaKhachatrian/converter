@@ -26,7 +26,7 @@ class PDFConverter(Processor):
 
         doc.close()
 
-    def process(self) -> None:
+    def process(self):
         os.makedirs(self.output_dir, exist_ok=True)
 
         doc = pymupdf.open(self.pdf_path)

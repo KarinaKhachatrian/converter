@@ -13,12 +13,12 @@ class DocumentProcessor(Processor):
         self.doc = Document(self.docx_path)
 
     @staticmethod
-    def apply_bold(paragraph) -> None:
+    def apply_bold(paragraph):
         for run in paragraph.runs:
             run.bold = True
 
     @staticmethod
-    def remove_nums(numpr_elements) -> None:
+    def remove_nums(numpr_elements):
         for numpr in numpr_elements:
             parent = numpr.getparent()
             parent.remove(numpr)
@@ -28,14 +28,14 @@ class DocumentProcessor(Processor):
         clean_text = text.lstrip(string.punctuation).rstrip(string.punctuation)
         return clean_text.strip()
 
-    def clean_first_paragraphs(self) -> None:
+    def clean_first_paragraphs(self):
         paragraphs = self.doc.paragraphs
         for i in [0, 1]:
 
             paragraphs[i].text = ''
         self.doc.save(self.docx_path)
 
-    def process(self) -> None:
+    def process(self):
         self.clean_first_paragraphs()
 
         for paragraph in self.doc.paragraphs:

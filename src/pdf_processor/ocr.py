@@ -24,7 +24,7 @@ class OCRProcessor(Processor):
         self.docx_path = docx_dir / f'{pdf_path.stem}.docx'
         self.docx_dir.mkdir(exist_ok=True)
 
-    def process(self) -> None:
+    def process(self):
         cmd = [
             self.ocr_engine_path,
             self.pdf_filepath,

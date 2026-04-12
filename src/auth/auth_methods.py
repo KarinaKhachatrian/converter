@@ -20,7 +20,7 @@ class Auth:
         return False
 
     @staticmethod
-    def show_warning(warning_text: str) -> None:
+    def show_warning(warning_text: str):
         warning_msg = QMessageBox()
         warning_msg.warning(
             None,
@@ -30,7 +30,7 @@ class Auth:
         warning_msg.show()
 
     @staticmethod
-    def show_message(message_text: str) -> None:
+    def show_message(message_text: str):
         message_msg = QMessageBox()
         message_msg.information(
             None,
@@ -43,7 +43,7 @@ class Auth:
                                    password_field: QLineEdit,
                                    open_icon_path: QIcon,
                                    close_icon_path: QIcon,
-                                   font: QFont) -> None:
+                                   font: QFont):
 
         if password_field.echoMode() == QLineEdit.EchoMode.Password:
             password_btn.setIcon(close_icon_path)

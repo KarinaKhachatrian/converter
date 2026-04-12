@@ -9,23 +9,23 @@ class HTMLProcessor(Processor):
         self.html_path = html_path
 
     @staticmethod
-    def write_content(filepath: Path, content: str) -> None:
+    def write_content(filepath: Path, content: str):
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(content)
 
     @staticmethod
-    def fix_images(soup: BeautifulSoup) -> None:
+    def fix_images(soup: BeautifulSoup):
         for img in soup.find_all('img'):
             src = '/'.join(img['src'].split('/')[1:])
             img['src'] = src
 
     @staticmethod
-    def unwrap_elements(elements) -> None:
+    def unwrap_elements(elements):
         for element in elements:
             element.unwrap()
 
     @staticmethod
-    def apply_headers(soup: BeautifulSoup) -> None:
+    def apply_headers(soup: BeautifulSoup):
         for strong in soup.find_all('strong'):
             text = strong.get_text(strip=True).replace('\n', ' ')
 
@@ -46,7 +46,7 @@ class HTMLProcessor(Processor):
                         strong.replace_with(h3_tag)
 
     @staticmethod
-    def clean_headers(soup: BeautifulSoup, tag_name: str) -> None:
+    def clean_headers(soup: BeautifulSoup, tag_name: str):
         headers = soup.find_all(tag_name)
 
         for header in headers:
@@ -54,7 +54,7 @@ class HTMLProcessor(Processor):
                 header.parent.unwrap()
 
     @staticmethod
-    def clean_pages(soup: BeautifulSoup) -> None:
+    def clean_pages(soup: BeautifulSoup):
         p_tags = soup.find_all('p')
         for p in p_tags:
             text = p.text.strip()

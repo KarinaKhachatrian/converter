@@ -3,6 +3,7 @@ from pathlib import Path
 
 from src.pdf_processor.processor import Processor
 
+
 class Wrapper(Processor):
     @staticmethod
     def read_content(filepath: Path) -> str:
@@ -11,12 +12,12 @@ class Wrapper(Processor):
         return content
 
     @staticmethod
-    def write_content(filepath: Path, content: str) -> None:
+    def write_content(filepath: Path, content: str):
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(content)
 
     @classmethod
-    def finalize(cls, html_path: Path, parser='html.parser') -> None:
+    def finalize(cls, html_path: Path, parser='html.parser'):
         content = cls.read_content(html_path)
         soup = BeautifulSoup(content, parser)
 

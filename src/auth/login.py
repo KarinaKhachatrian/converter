@@ -115,7 +115,7 @@ class LoginWindow(QWidget):
         self.layout.addWidget(self.register_lbl)
         self.layout.addWidget(self.register_btn)
 
-    def change_theme(self) -> None:
+    def change_theme(self):
         widget = self
         if self.is_light_theme:
             with open(self.root / r'styles/dark.qss', 'r', encoding='utf-8') as f:
@@ -141,7 +141,7 @@ class LoginWindow(QWidget):
         self.login_successful.emit()
 
     @Slot()
-    def login(self) -> None:
+    def login(self):
         email = self.email_field.text()
         password = self.password_field.text()
 
