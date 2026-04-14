@@ -5,7 +5,7 @@ import cv2
 from ultralytics import YOLO
 
 from src.pdf_processor.processor import Processor
-from src.pdf_processor.get_base_path import get_base_path
+from src.get_base_path import get_base_path
 
 
 class StampsExtractor(Processor):

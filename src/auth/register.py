@@ -213,6 +213,7 @@ class RegisterWindow(QWidget):
         self.auth_methods.show_message('Регистрация прошла успешно!')
         self.registration_successful.emit()
 
+    @Slot()
     def register(self):
         email = self.email_field.text()
         password = self.password_field.text()
