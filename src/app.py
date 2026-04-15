@@ -98,7 +98,7 @@ class Application:
 
         switch_window(self.login_window, self.account_window)
 
-        self.read_window = ReadWindow(self.root, user_id)
+        self.read_window = ReadWindow(self.root)
         self.read_window.resize(800, 500)
         self.read_window.setStyleSheet(self.style_sheet)
         self.read_window.back_btn.clicked.connect(
@@ -114,6 +114,12 @@ class Application:
 
     def show_info_btn_clicked(self):
         if self.read_window is not None:
+            email = self.login_window.email_field.text()
+            user_id = self.db.select_user_id(email)
+            fresh_filenames = self.db.select_filenames(user_id)
+
+            self.read_window.update_filenames(fresh_filenames)
+
             switch_window(self.account_window, self.read_window)
         else:
             QMessageBox.warning(self.account_window, 'Ошибка',

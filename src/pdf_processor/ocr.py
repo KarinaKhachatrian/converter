@@ -13,7 +13,7 @@ class OCRProcessor(Processor):
         self.base_path = get_base_path()
 
         if ocr_engine_path is None:
-            self.ocr_engine_path = Path(self.base_path) / Path('ocr_engine') / Path('finereaderocr.exe')
+            self.ocr_engine_path = Path(self.base_path) / Path('src') / Path('ocr_engine') / Path('finereaderocr.exe')
         else:
             ocr_path = Path(ocr_engine_path)
             if ocr_path.is_absolute():

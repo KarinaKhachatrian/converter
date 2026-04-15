@@ -149,8 +149,9 @@ class LoginWindow(QWidget):
             self.auth_methods.show_warning('Заполните все поля')
             return
 
-        if not self.db.check_credentials(email, hash_password(password)):
+        elif not self.db.check_credentials(email, hash_password(password)):
             self.auth_methods.show_warning('Неверный логин или пароль')
 
-        self.login_user()
+        else:
+            self.login_user()
 

@@ -223,17 +223,18 @@ class RegisterWindow(QWidget):
             self.auth_methods.show_warning('Пользователь уже существует')
             return
 
-        if not self.check_not_empty():
+        elif not self.check_not_empty():
             self.auth_methods.show_warning('Заполните все поля')
             return
 
-        if not self.auth_methods.email_check(email):
+        elif not self.auth_methods.email_check(email):
             self.auth_methods.show_warning('Неверный формат электронной почты')
             return
 
-        if password != confirm_password:
+        elif password != confirm_password:
             self.auth_methods.show_warning('Пароли не совпадают')
             return
 
-        self.register_user()
+        else:
+            self.register_user()
 

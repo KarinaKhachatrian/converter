@@ -18,7 +18,7 @@ class StampsExtractor(Processor):
         self.base_path = get_base_path()
 
         if weights_path is None:
-            self.weights_path = Path(self.base_path) / Path('train') / Path('weights') / Path('best.pt')
+            self.weights_path = Path(self.base_path) / Path('src') / Path('train') / Path('weights') / Path('best.pt')
         else:
             self.weights_path = weights_path
 

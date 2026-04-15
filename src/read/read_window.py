@@ -8,11 +8,10 @@ from src.db.init_db import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
 
 
 class ReadWindow(QWidget):
-    def __init__(self, root, user_id):
+    def __init__(self, root):
         super().__init__()
         
         self.root = root
-        self.user_id = user_id
 
         self.db = Database(
             dbname=DB_NAME,
@@ -20,7 +19,7 @@ class ReadWindow(QWidget):
             password=DB_PASSWORD,
             host=DB_HOST
         )
-        filenames = self.db.select_filenames(self.user_id)
+        # filenames = self.db.select_filenames(self.user_id)
 
         label_font_path = str(root / r'fonts/Montserrat/static/Montserrat-Medium.ttf')
         label_font = load_font(label_font_path, 13)
@@ -55,7 +54,6 @@ class ReadWindow(QWidget):
         self.filename_lbl.setFont(title_font)
 
         self.filenames_combo = QComboBox(self)
-        self.filenames_combo.addItems(filenames)
         self.filenames_combo.setFont(label_font)
         self.filenames_combo.currentTextChanged.connect(self.change_filename)
 
@@ -174,3 +172,12 @@ class ReadWindow(QWidget):
             third_content = self.db.select_third_level_content(third_header, self.current_filename)
             self.content_plain.setPlainText(third_content)
 
+    def update_filenames(self, filenames):
+        current = self.filenames_combo.currentText()
+        self.filenames_combo.clear()
+        self.filenames_combo.addItems(filenames)
+
+        if current in filenames:
+            self.filenames_combo.setCurrentText(current)
+        elif filenames:
+            self.change_filename(filenames[0])
