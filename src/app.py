@@ -70,7 +70,6 @@ class Application:
 
     def login_successful(self):
         email = self.login_window.email_field.text()
-        user_id = self.db.select_user_id(email)
         username = self.db.select_username(email)
 
         self.account_window = AccountWindow(self.root, username)
