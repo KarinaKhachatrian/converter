@@ -1,15 +1,18 @@
+from pathlib import Path
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
 from PySide6.QtGui import QIcon
 
 from src.window_methods import load_font
-
+from src.get_base_path import get_base_path
 
 class AccountWindow(QWidget):
     def __init__(self, root, username):
         super().__init__()
 
-        self.root = root
+        self.base_path = Path(get_base_path())
+        self.root = self.base_path / 'src'
+
         self.setWindowTitle('Система для работы с ОХЛП')
 
         self.light_icon = QIcon(str(self.root / 'icons/sun.png'))

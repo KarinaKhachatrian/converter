@@ -14,12 +14,14 @@ from src.pdf_processor.pdf_processor_window import ProcessorWindow
 from src.window_methods import show_window, switch_window
 from src.structurer.structurer_window import DBWorkWindow
 from src.read.read_window import ReadWindow
+from src.get_base_path import get_base_path
 
 class Application:
     def __init__(self):
         self.app = QApplication([])
-        current_file = Path(__file__).resolve()
-        self.root = current_file.parents[1] / 'src'
+
+        self.base_path = Path(get_base_path())
+        self.root = self.base_path / 'src'
 
         self.db = Database(
             dbname=DB_NAME,
@@ -28,7 +30,16 @@ class Application:
             host=DB_HOST
         )
 
-        with open(self.root / r'styles/light.qss', 'r', encoding='utf-8') as f:
+        style_path = self.root / 'styles' / 'light.qss'
+
+        if not style_path.exists():
+            alternative_path = self.base_path / 'styles' / 'light.qss'
+            if alternative_path.exists():
+                style_path = alternative_path
+            else:
+                raise FileNotFoundError(f"Style file not found at {style_path} or {alternative_path}")
+
+        with open(style_path, 'r', encoding='utf-8') as f:
             self.style_sheet = f.read()
 
         self.db_work_window = None

@@ -24,6 +24,7 @@ from src.pdf_processor.wrapper import Wrapper
 from src.interfaces import Worker, Processor
 
 from src.window_methods import load_font
+from src.get_base_path import get_base_path
 
 
 class PDFWorker(Worker):
@@ -155,7 +156,9 @@ class ProcessorWindow(Processor):
     def __init__(self, root, login):
         super().__init__()
 
-        self.root = root
+        self.base_path = Path(get_base_path())
+        self.root = self.base_path / 'src'
+
         self.login = login
         self.worker = None
         self.selected_dir = None

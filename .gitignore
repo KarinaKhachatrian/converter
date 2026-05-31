@@ -3,3 +3,6 @@
 __pycache__
 src/ocr_engine
 .env
+dist
+build
+output

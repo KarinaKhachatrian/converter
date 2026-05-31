@@ -17,6 +17,8 @@ from src.db.init_db import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
 from src.structurer.structurer import Structurer
 
 from src.interfaces import Worker, Processor
+from src.get_base_path import get_base_path
+
 
 class DBWorker(Worker):
     progress_updated = Signal(int)
@@ -98,7 +100,9 @@ class DBWorkWindow(Processor):
     def __init__(self, root, login):
         super().__init__()
 
-        self.root = root
+        self.base_path = Path(get_base_path())
+        self.root = self.base_path / 'src'
+
         self.login = login
         self.worker = None
         self.setWindowTitle('Система для работы с ОХЛП')

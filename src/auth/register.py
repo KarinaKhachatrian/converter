@@ -1,3 +1,4 @@
+from pathlib import Path
 from PySide6.QtCore import Qt, Slot, Signal, QSize
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QComboBox, QPushButton
 from PySide6.QtGui import QIcon
@@ -10,6 +11,7 @@ from src.auth.hash_password import hash_password
 from src.window_methods import load_font
 
 from src.auth.auth_methods import Auth
+from src.get_base_path import get_base_path
 
 
 class RegisterWindow(QWidget):
@@ -26,7 +28,9 @@ class RegisterWindow(QWidget):
             host=DB_HOST
         )
 
-        self.root = root
+        self.base_path = Path(get_base_path())
+        self.root = self.base_path / 'src'
+
         self.login_window = login_window
         self.auth_methods = Auth()
 

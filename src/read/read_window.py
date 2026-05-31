@@ -1,3 +1,4 @@
+from pathlib import Path
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton, QPlainTextEdit
@@ -6,12 +7,14 @@ from src.window_methods import load_font
 from src.db.database import Database
 from src.db.init_db import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
 
+from src.get_base_path import get_base_path
 
 class ReadWindow(QWidget):
     def __init__(self, root):
         super().__init__()
-        
-        self.root = root
+
+        self.base_path = Path(get_base_path())
+        self.root = self.base_path / 'src'
 
         self.db = Database(
             dbname=DB_NAME,
@@ -19,7 +22,6 @@ class ReadWindow(QWidget):
             password=DB_PASSWORD,
             host=DB_HOST
         )
-        # filenames = self.db.select_filenames(self.user_id)
 
         label_font_path = str(root / r'fonts/Montserrat/static/Montserrat-Medium.ttf')
         label_font = load_font(label_font_path, 13)
